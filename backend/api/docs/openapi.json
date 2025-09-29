@@ -1,0 +1,796 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Fantasy Formula 1 API",
+        "version": "1.0.0-beta",
+        "description": "Interactive documentation & test harness for the Fantasy F1 backend. Use the Authorize button to set a JWT (Bearer)."
+    },
+    "tags": [
+        {
+            "name": "Auth",
+            "description": "Authentication & user profile"
+        },
+        {
+            "name": "Drivers",
+            "description": "Driver roster & race pricing"
+        },
+        {
+            "name": "Races",
+            "description": "Races & calendar"
+        },
+        {
+            "name": "Teams",
+            "description": "Team selections"
+        },
+        {
+            "name": "Championships",
+            "description": "Championship management"
+        },
+        {
+            "name": "Seasons",
+            "description": "Season and rules"
+        },
+        {
+            "name": "Results",
+            "description": "Race results & scoring"
+        }
+    ],
+    "servers": [
+        {
+            "url": "http://localhost:8765"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "schemas": {
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "username": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Driver": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "first_name": {
+                        "type": "string"
+                    },
+                    "last_name": {
+                        "type": "string"
+                    },
+                    "team": {
+                        "type": "string"
+                    },
+                    "base_price": {
+                        "type": "number"
+                    }
+                }
+            },
+            "Championship": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    },
+    "security": [
+        {
+            "BearerAuth": []
+        }
+    ],
+    "paths": {
+        "/backend/api/auth/register.php": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Register new user",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "username",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    }
+                }
+            }
+        },
+        "/backend/api/auth/login.php": {
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Login and obtain JWT",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "username",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "username": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token issued"
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/backend/api/auth/profile.php": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get current user profile",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Profile",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/backend/api/championships/index.php": {
+            "get": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "List championships",
+                "responses": {
+                    "200": {
+                        "description": "List returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Create championship",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/backend/api/races/index.php": {
+            "get": {
+                "tags": [
+                    "Races"
+                ],
+                "summary": "List races (current season)",
+                "responses": {
+                    "200": {
+                        "description": "Races returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Races"
+                ],
+                "summary": "Create race",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "season_id",
+                                    "name",
+                                    "race_date"
+                                ],
+                                "properties": {
+                                    "season_id": {
+                                        "type": "integer"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "track_name": {
+                                        "type": "string"
+                                    },
+                                    "country": {
+                                        "type": "string"
+                                    },
+                                    "race_date": {
+                                        "type": "string"
+                                    },
+                                    "qualifying_date": {
+                                        "type": "string"
+                                    },
+                                    "round_number": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/backend/api/drivers/index.php": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "List active drivers (optional race pricing)",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 100
+                        }
+                    },
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "If provided, include per-race price if exists"
+                    }
+                ],
+                "responses": {
+                    "/backend/api/drivers/all.php": {
+                        "get": {
+                            "tags": [
+                                "Drivers"
+                            ],
+                            "summary": "List all drivers (no pagination)",
+                            "parameters": [
+                                {
+                                    "name": "race_id",
+                                    "in": "query",
+                                    "schema": {
+                                        "type": "integer"
+                                    },
+                                    "description": "Include per-race price if provided"
+                                }
+                            ],
+                            "responses": {
+                                "200": {
+                                    "description": "All drivers returned"
+                                }
+                            }
+                        }
+                    },
+                    "200": {
+                        "description": "Drivers returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Create a new driver",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "first_name",
+                                    "last_name"
+                                ],
+                                "properties": {
+                                    "first_name": {
+                                        "type": "string"
+                                    },
+                                    "last_name": {
+                                        "type": "string"
+                                    },
+                                    "driver_number": {
+                                        "type": "integer"
+                                    },
+                                    "driver_code": {
+                                        "type": "string"
+                                    },
+                                    "nationality": {
+                                        "type": "string"
+                                    },
+                                    "picture_url": {
+                                        "type": "string"
+                                    },
+                                    "logo_url": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Driver created"
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/backend/api/races/all.php": {
+            "get": {
+                "tags": [
+                    "Races"
+                ],
+                "summary": "List all races (optional season filter)",
+                "parameters": [
+                    {
+                        "name": "season",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Season year to filter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All races returned"
+                    }
+                }
+            }
+        },
+        "/backend/api/drivers/race.php": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Drivers with pricing for race (use ?race_id=1)",
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Drivers + pricing"
+                    },
+                    "404": {
+                        "description": "Race not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Update driver prices for race",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "driver_pricing": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "driver_id",
+                                                "price"
+                                            ],
+                                            "properties": {
+                                                "driver_id": {
+                                                    "type": "integer"
+                                                },
+                                                "price": {
+                                                    "type": "number"
+                                                },
+                                                "ai_confidence": {
+                                                    "type": "number"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    }
+                }
+            }
+        },
+        "/backend/api/teams/index.php": {
+            "get": {
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Get a team selection (current user, another user if admin, or all teams for a race)",
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "championship_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "View another user's team (admin only)"
+                    },
+                    {
+                        "name": "all",
+                        "in": "query",
+                        "schema": {
+                            "type": "boolean"
+                        },
+                        "description": "List all teams for race & championship"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Team(s) retrieved"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Create or update team selection for a race",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "race_id": {
+                                        "type": "integer"
+                                    },
+                                    "championship_id": {
+                                        "type": "integer"
+                                    },
+                                    "drivers": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "drs_enabled": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "required": [
+                                    "race_id",
+                                    "championship_id",
+                                    "drivers"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Team saved"
+                    }
+                }
+            }
+        },
+        "/backend/api/seasons/index.php": {
+            "get": {
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "List seasons",
+                "responses": {
+                    "200": {
+                        "description": "Seasons returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Seasons"
+                ],
+                "summary": "Create season",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "year"
+                                ],
+                                "properties": {
+                                    "year": {
+                                        "type": "integer"
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created"
+                    }
+                }
+            }
+        },
+        "/backend/api/results/index.php": {
+            "get": {
+                "tags": [
+                    "Results"
+                ],
+                "summary": "List race results",
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Results returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Results"
+                ],
+                "summary": "Submit race results & score teams (super admin only)",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "race_id": {
+                                        "type": "integer"
+                                    },
+                                    "results": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "required": [
+                                                "driver_id",
+                                                "position"
+                                            ],
+                                            "properties": {
+                                                "driver_id": {
+                                                    "type": "integer"
+                                                },
+                                                "position": {
+                                                    "type": "integer"
+                                                },
+                                                "fastest_lap": {
+                                                    "type": "boolean"
+                                                },
+                                                "dnf": {
+                                                    "type": "boolean"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "race_id",
+                                    "results"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Results stored"
+                    },
+                    "403": {
+                        "description": "Forbidden (super admin only)"
+                    }
+                }
+            }
+        }
+    }
+}

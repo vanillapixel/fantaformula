@@ -1,0 +1,38 @@
+# Fantasy Formula 1 - Docker Compose Configuration (Compose v2; version key removed as obsolete)
+services:
+  fantaformula:
+    build: .
+    container_name: fantaformula-app
+    ports:
+      - "8765:80"
+    volumes:
+      # Mount backend for live code edits (no rebuild needed for PHP changes)
+      - ./backend:/var/www/html/backend
+      - ./backend/database:/var/www/html/backend/database
+      - ./backend/uploads:/var/www/html/backend/uploads
+      - ./backend/api/docs:/var/www/html/backend/api/docs
+    environment:
+      - PHP_ENV=development
+      - APP_ENV=development
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/backend/database/info.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add a database browser for development
+  sqlite-browser:
+    image: linuxserver/sqlitebrowser:latest
+    container_name: fantaformula-db-browser
+    ports:
+      - "8766:3000"
+    volumes:
+      - ./backend/database:/data
+    environment:
+      - PUID=1000
+      - PGID=1000
+    restart: unless-stopped
+    profiles:
+      - tools
