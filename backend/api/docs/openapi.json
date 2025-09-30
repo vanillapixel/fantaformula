@@ -19,8 +19,8 @@
             "description": "Races & calendar"
         },
         {
-            "name": "Teams",
-            "description": "Team selections"
+            "name": "Lineups",
+            "description": "User race lineup selections"
         },
         {
             "name": "Championships",
@@ -75,8 +75,9 @@
                     "last_name": {
                         "type": "string"
                     },
-                    "team": {
-                        "type": "string"
+                    "constructor": {
+                        "type": "string",
+                        "description": "Constructor (formerly team)"
                     },
                     "base_price": {
                         "type": "number"
@@ -563,12 +564,12 @@
                 }
             }
         },
-        "/backend/api/teams/index.php": {
+        "/backend/api/lineups/index.php": {
             "get": {
                 "tags": [
-                    "Teams"
+                    "Lineups"
                 ],
-                "summary": "Get a team selection (current user, another user if admin, or all teams for a race)",
+                "summary": "Get a lineup (current user, another user if admin, or all lineups for a race)",
                 "parameters": [
                     {
                         "name": "race_id",
@@ -591,7 +592,7 @@
                         "schema": {
                             "type": "integer"
                         },
-                        "description": "View another user's team (admin only)"
+                        "description": "View another user's lineup (admin only)"
                     },
                     {
                         "name": "all",
@@ -599,20 +600,20 @@
                         "schema": {
                             "type": "boolean"
                         },
-                        "description": "List all teams for race & championship"
+                        "description": "List all lineups for race & championship"
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Team(s) retrieved"
+                        "description": "Lineup(s) retrieved"
                     }
                 }
             },
             "post": {
                 "tags": [
-                    "Teams"
+                    "Lineups"
                 ],
-                "summary": "Create or update team selection for a race",
+                "summary": "Create or update lineup selection for a race",
                 "security": [
                     {
                         "BearerAuth": []
@@ -652,7 +653,7 @@
                 },
                 "responses": {
                     "200": {
-                        "description": "Team saved"
+                        "description": "Lineup saved"
                     }
                 }
             }
@@ -733,7 +734,7 @@
                 "tags": [
                     "Results"
                 ],
-                "summary": "Submit race results & score teams (super admin only)",
+                "summary": "Submit race results & score lineups (super admin only)",
                 "security": [
                     {
                         "BearerAuth": []

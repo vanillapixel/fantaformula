@@ -22,6 +22,23 @@ services:
       retries: 3
       start_period: 40s
 
+  # Frontend React app
+  frontend:
+    build: ./frontend
+    container_name: fantaformula-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8765/backend/api
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    depends_on:
+      - fantaformula
+
   # Optional: Add a database browser for development
   sqlite-browser:
     image: linuxserver/sqlitebrowser:latest

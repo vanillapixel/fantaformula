@@ -19,25 +19,10 @@ function handleCORS() {
 }
 
 function setCORSHeaders() {
-    // Allow origins (restrict in production)
-    if (defined('CORS_ALLOWED_ORIGINS')) {
-        header('Access-Control-Allow-Origin: ' . CORS_ALLOWED_ORIGINS);
-    }
-    
-    // Allow methods
-    if (defined('CORS_ALLOWED_METHODS')) {
-        header('Access-Control-Allow-Methods: ' . CORS_ALLOWED_METHODS);
-    }
-    
-    // Allow headers
-    if (defined('CORS_ALLOWED_HEADERS')) {
-        header('Access-Control-Allow-Headers: ' . CORS_ALLOWED_HEADERS);
-    }
-    
-    // Allow credentials
-    header('Access-Control-Allow-Credentials: true');
-    
-    // Cache preflight for 24 hours
+    // Minimal dev setup; no credentials header to avoid wildcard conflict.
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
     header('Access-Control-Max-Age: 86400');
 }
 ?>

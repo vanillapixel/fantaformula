@@ -1,7 +1,7 @@
 <?php
 // Race Results & Scoring API
 // GET  /backend/api/results/index.php?race_id=1 -> list results (ordered by position)
-// POST /backend/api/results/index.php           -> submit/update results + recompute team points
+// POST /backend/api/results/index.php           -> submit/update results + recompute lineup points
 // Body: { race_id: int, results: [ { driver_id, position, fastest_lap(bool), dnf(bool) } ] }
 
 require_once __DIR__ . '/../../config/config.php';
@@ -80,12 +80,12 @@ function handlePostResults() {
             $totalDriverPoints[$driverId] = $points;
         }
 
-        // Recompute team points
-        $teamSelect = $db->prepare("SELECT urt.id, usd.race_driver_id, rd.driver_id
-                                     FROM user_race_teams urt
-                                     JOIN user_selected_drivers usd ON urt.id = usd.user_race_team_id
-                                     JOIN race_drivers rd ON usd.race_driver_id = rd.id
-                                     WHERE urt.race_id = ?");
+    // Recompute lineup points
+    $teamSelect = $db->prepare("SELECT url.id, usd.race_driver_id, rd.driver_id
+                     FROM user_race_lineups url
+                     JOIN user_selected_drivers usd ON url.id = usd.user_race_lineup_id
+                     JOIN race_drivers rd ON usd.race_driver_id = rd.id
+                     WHERE url.race_id = ?");
         $teamSelect->execute([$raceId]);
         $teamDrivers = $teamSelect->fetchAll(PDO::FETCH_ASSOC);
         $pointsByTeam = [];
@@ -94,13 +94,13 @@ function handlePostResults() {
             $drvId = (int)$td['driver_id'];
             $pointsByTeam[$pid] = ($pointsByTeam[$pid] ?? 0) + ($totalDriverPoints[$drvId] ?? 0);
         }
-        $upd = $db->prepare('UPDATE user_race_teams SET total_points = ? WHERE id = ?');
+    $upd = $db->prepare('UPDATE user_race_lineups SET total_points = ? WHERE id = ?');
         foreach ($pointsByTeam as $teamId=>$pts) {
             $upd->execute([$pts,$teamId]);
         }
 
         $db->commit();
-        sendSuccess(['race_id'=>$raceId,'updated_results'=>count($results),'teams_scored'=>count($pointsByTeam)], 'Results saved & teams scored');
+    sendSuccess(['race_id'=>$raceId,'updated_results'=>count($results),'lineups_scored'=>count($pointsByTeam)], 'Results saved & lineups scored');
     } catch (Exception $e) {
         $db->rollBack();
         throw $e;

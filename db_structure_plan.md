@@ -112,9 +112,9 @@ _F1 races with flexible budget per race_
 - budget_override (DECIMAL(6,2)) -- NULL means use default from season_rules
 ```
 
-#### 7. **f1_teams**
+#### 7. **constructors**
 
-_F1 constructor teams with visual assets_
+_F1 constructors with visual assets (renamed from f1_teams)_
 
 ```sql
 - id (INTEGER PRIMARY KEY)
@@ -150,7 +150,7 @@ _Links drivers to specific races with AI-calculated prices_
 - id (INTEGER PRIMARY KEY)
 - race_id (INTEGER REFERENCES races(id))
 - driver_id (INTEGER REFERENCES drivers(id))
-- f1_team_id (INTEGER REFERENCES f1_teams(id))
+- constructor_id (INTEGER REFERENCES constructors(id))
 - price (DECIMAL(6,2) NOT NULL) -- AI-calculated before qualifying
 - ai_calculated_at (DATETIME)
 - UNIQUE(race_id, driver_id)
@@ -187,11 +187,11 @@ _Actual F1 race results for points calculation_
 - UNIQUE(race_id, driver_id)
 ```
 
-### Fantasy Team Tables
+### Fantasy Lineup Tables
 
-#### 12. **user_race_teams**
+#### 12. **user_race_lineups**
 
-_User's fantasy team setup for each race_
+_User's fantasy lineup setup for each race (renamed from user_race_teams)_
 
 ```sql
 - id (INTEGER PRIMARY KEY)
@@ -207,13 +207,13 @@ _User's fantasy team setup for each race_
 
 #### 13. **user_selected_drivers**
 
-_Individual driver selections for each user's race team_
+_Individual driver selections for each user's race lineup_
 
 ```sql
 - id (INTEGER PRIMARY KEY)
-- user_race_team_id (INTEGER REFERENCES user_race_teams(id))
+- user_race_lineup_id (INTEGER REFERENCES user_race_lineups(id))
 - race_driver_id (INTEGER REFERENCES race_drivers(id))
-- UNIQUE(user_race_team_id, race_driver_id) -- same driver can't be selected twice
+- UNIQUE(user_race_lineup_id, race_driver_id) -- same driver can't be selected twice
 ```
 
 ---

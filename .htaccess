@@ -3,16 +3,6 @@
 
 RewriteEngine On
 
-# Enable CORS for all API requests
-Header always set Access-Control-Allow-Origin "*"
-Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With"
-Header always set Access-Control-Allow-Credentials "true"
-
-# Handle preflight OPTIONS requests
-RewriteCond %{REQUEST_METHOD} OPTIONS
-RewriteRule ^(.*)$ - [R=200,L]
-
 # Backend API routing - files exist and can be accessed directly
 # No rewriting needed for existing files
 

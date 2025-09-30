@@ -46,7 +46,7 @@ try {
                 sendMethodNotAllowed(['GET']);
             }
             
-            // Get drivers available for this race with their teams and prices
+            // Get drivers available for this race with their constructors and prices
             $stmt = $db->prepare("
                 SELECT 
                     d.id as driver_id,
@@ -57,12 +57,12 @@ try {
                     d.nationality,
                     d.picture_url,
                     d.logo_url,
-                    ft.id as team_id,
-                    ft.name as team_name,
-                    ft.short_name as team_short_name,
-                    ft.color_primary as team_color,
-                    ft.picture_url as team_picture_url,
-                    ft.logo_url as team_logo_url,
+                    ft.id as constructor_id,
+                    ft.name as constructor_name,
+                    ft.short_name as constructor_short_name,
+                    ft.color_primary as constructor_color,
+                    ft.picture_url as constructor_picture_url,
+                    ft.logo_url as constructor_logo_url,
                     rd.id as race_driver_id,
                     rd.price,
                     rd.ai_calculated_at,
@@ -73,7 +73,7 @@ try {
                     rr.points_earned
                 FROM race_drivers rd
                 JOIN drivers d ON rd.driver_id = d.id
-                JOIN f1_teams ft ON rd.f1_team_id = ft.id
+                JOIN constructors ft ON rd.constructor_id = ft.id
                 LEFT JOIN race_results rr ON rd.race_id = rr.race_id AND rd.driver_id = rr.driver_id
                 WHERE rd.race_id = ? AND d.active = 1
                 ORDER BY rd.price DESC, d.last_name ASC
@@ -85,7 +85,7 @@ try {
             foreach ($drivers as &$driver) {
                 $driver['driver_id'] = (int)$driver['driver_id'];
                 $driver['driver_number'] = (int)$driver['driver_number'];
-                $driver['team_id'] = (int)$driver['team_id'];
+                $driver['constructor_id'] = (int)$driver['constructor_id'];
                 $driver['race_driver_id'] = (int)$driver['race_driver_id'];
                 $driver['price'] = (float)$driver['price'];
                 $driver['qualifying_position'] = $driver['qualifying_position'] ? (int)$driver['qualifying_position'] : null;

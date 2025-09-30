@@ -13,7 +13,7 @@ try {
     $db = getDB();
     
     switch ($method) {
-        case 'GET':
+    case 'GET':
             // Get query parameters
             $status = getQueryParam('status'); // upcoming, active, completed
             $public = getQueryParam('public'); // true/false
@@ -93,7 +93,20 @@ try {
             $stmt->execute($params);
             $championships = $stmt->fetchAll();
             
-            // Format response
+            // Format response + attach per-user standings (points & position) if user_id filter was provided
+            $userIdInt = $user_id ? (int)$user_id : null;
+            $standStmt = null;
+            if ($userIdInt) {
+                $standStmt = $db->prepare(
+                    'SELECT cp.user_id, COALESCE(SUM(url.total_points),0) AS total_points ' .
+                    'FROM championship_participants cp ' .
+                    'LEFT JOIN user_race_lineups url ON url.championship_id = cp.championship_id AND url.user_id = cp.user_id ' .
+                    'WHERE cp.championship_id = ? ' .
+                    'GROUP BY cp.user_id ' .
+                    'ORDER BY total_points DESC, cp.user_id ASC'
+                );
+            }
+
             foreach ($championships as &$championship) {
                 $championship['id'] = (int)$championship['id'];
                 $championship['participant_count'] = (int)$championship['participant_count'];
@@ -101,6 +114,30 @@ try {
                 $championship['is_public'] = (bool)$championship['is_public'];
                 $championship['season_year'] = (int)$championship['season_year'];
                 $championship['admin_usernames'] = $championship['admin_usernames'] ? explode(',', $championship['admin_usernames']) : [];
+
+                if ($userIdInt) {
+                    $championship['user_points'] = 0.0;
+                    $championship['user_position'] = null; // null -> frontend can render '-'
+                    $standStmt->execute([$championship['id']]);
+                    $rowsPts = $standStmt->fetchAll(PDO::FETCH_ASSOC);
+                    $rank = 0; $lastPts = null; $index = 0; $found = false;
+                    foreach ($rowsPts as $r) {
+                        $index++; $pts = (float)$r['total_points'];
+                        if ($lastPts === null || $pts < $lastPts) { $rank = $index; $lastPts = $pts; }
+                        if ((int)$r['user_id'] === $userIdInt) {
+                            $championship['user_points'] = $pts;
+                            $championship['user_position'] = $rank;
+                            $found = true; break; // we can break once found
+                        }
+                    }
+                    if (!$found) {
+                        // user not yet with any lineup -> points 0 position participant_count (at bottom)
+                        if ($championship['participant_count'] > 0) {
+                            $championship['user_points'] = 0.0;
+                            $championship['user_position'] = $championship['participant_count'];
+                        }
+                    }
+                }
             }
             
             sendPaginatedResponse($championships, $page, $pageSize, $totalItems);

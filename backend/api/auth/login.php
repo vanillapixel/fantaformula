@@ -5,14 +5,27 @@ require_once __DIR__ . '/../../middleware/auth.php';
 
 logRequest();
 
+// Handle OPTIONS preflight request
+if (getRequestMethod() === 'OPTIONS') {
+    // CORS headers are already set by config.php
+    http_response_code(200);
+    exit;
+}
+
 // Only allow POST requests
 if (getRequestMethod() !== 'POST') {
     sendMethodNotAllowed(['POST']);
 }
 
 try {
-    // Get input data
-    $input = getJSONInput();
+    // Get input data (support both JSON and x-www-form-urlencoded to avoid CORS preflight in dev)
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    if (stripos($contentType, 'application/json') === 0) {
+        $input = getJSONInput();
+    } else {
+        // Fallback to POST variables
+        $input = $_POST;
+    }
     
     // Validation
     $errors = [];

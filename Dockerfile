@@ -17,6 +17,10 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
+# Add centralized Apache CORS config
+COPY backend/apache/cors.conf /etc/apache2/conf-available/cors.conf
+RUN a2enconf cors
+
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html \

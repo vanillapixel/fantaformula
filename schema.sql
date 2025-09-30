@@ -87,8 +87,8 @@ CREATE TABLE races (
     FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE
 );
 
--- F1 teams (constructors)
-CREATE TABLE f1_teams (
+-- Constructors (formerly f1_teams)
+CREATE TABLE constructors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     season_id INTEGER NOT NULL,
     name TEXT NOT NULL,
@@ -117,12 +117,12 @@ CREATE TABLE race_drivers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     race_id INTEGER NOT NULL,
     driver_id INTEGER NOT NULL,
-    f1_team_id INTEGER NOT NULL,
+    constructor_id INTEGER NOT NULL,
     price DECIMAL(6,2) NOT NULL,
     ai_calculated_at DATETIME,
     FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
     FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE,
-    FOREIGN KEY (f1_team_id) REFERENCES f1_teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (constructor_id) REFERENCES constructors(id) ON DELETE CASCADE,
     UNIQUE(race_id, driver_id)
 );
 
@@ -161,8 +161,8 @@ CREATE TABLE race_results (
 -- FANTASY TEAM TABLES
 -- =====================================================
 
--- User race teams (fantasy team setup per race)
-CREATE TABLE user_race_teams (
+-- User race lineups (fantasy lineup setup per race, formerly user_race_teams)
+CREATE TABLE user_race_lineups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     race_id INTEGER NOT NULL,
@@ -180,11 +180,11 @@ CREATE TABLE user_race_teams (
 -- User selected drivers (individual driver picks)
 CREATE TABLE user_selected_drivers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_race_team_id INTEGER NOT NULL,
+    user_race_lineup_id INTEGER NOT NULL,
     race_driver_id INTEGER NOT NULL,
-    FOREIGN KEY (user_race_team_id) REFERENCES user_race_teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_race_lineup_id) REFERENCES user_race_lineups(id) ON DELETE CASCADE,
     FOREIGN KEY (race_driver_id) REFERENCES race_drivers(id) ON DELETE CASCADE,
-    UNIQUE(user_race_team_id, race_driver_id) -- same driver can't be selected twice
+    UNIQUE(user_race_lineup_id, race_driver_id) -- same driver can't be selected twice
 );
 
 -- =====================================================
@@ -211,11 +211,11 @@ CREATE INDEX idx_race_drivers_driver ON race_drivers(driver_id);
 CREATE INDEX idx_race_results_race ON race_results(race_id);
 CREATE INDEX idx_race_results_driver ON race_results(driver_id);
 
--- Fantasy team indexes
-CREATE INDEX idx_user_race_teams_user ON user_race_teams(user_id);
-CREATE INDEX idx_user_race_teams_race ON user_race_teams(race_id);
-CREATE INDEX idx_user_race_teams_championship ON user_race_teams(championship_id);
-CREATE INDEX idx_user_selected_drivers_team ON user_selected_drivers(user_race_team_id);
+-- Fantasy lineup indexes
+CREATE INDEX idx_user_race_lineups_user ON user_race_lineups(user_id);
+CREATE INDEX idx_user_race_lineups_race ON user_race_lineups(race_id);
+CREATE INDEX idx_user_race_lineups_championship ON user_race_lineups(championship_id);
+CREATE INDEX idx_user_selected_drivers_lineup ON user_selected_drivers(user_race_lineup_id);
 
 -- =====================================================
 -- SAMPLE DATA FOR TESTING
@@ -244,8 +244,8 @@ INSERT INTO championship_admins (championship_id, user_id) VALUES (1, 3);
 INSERT INTO races (season_id, name, track_name, country, race_date, qualifying_date, round_number) VALUES 
 (1, 'Bahrain Grand Prix', 'Bahrain International Circuit', 'Bahrain', '2025-03-16 15:00:00', '2025-03-15 15:00:00', 1);
 
--- Insert test F1 teams (simplified)
-INSERT INTO f1_teams (season_id, name, short_name, color_primary) VALUES 
+-- Insert test constructors (simplified)
+INSERT INTO constructors (season_id, name, short_name, color_primary) VALUES 
 (1, 'Red Bull Racing', 'RBR', '#0600EF'),
 (1, 'Mercedes', 'MER', '#00D2BE'),
 (1, 'Ferrari', 'FER', '#DC0000');
@@ -257,7 +257,7 @@ INSERT INTO drivers (first_name, last_name, driver_number, driver_code, national
 ('Charles', 'Leclerc', 16, 'LEC', 'Monégasque');
 
 -- Link drivers to race with test prices
-INSERT INTO race_drivers (race_id, driver_id, f1_team_id, price, ai_calculated_at) VALUES 
+INSERT INTO race_drivers (race_id, driver_id, constructor_id, price, ai_calculated_at) VALUES 
 (1, 1, 1, 45.50, CURRENT_TIMESTAMP), -- Verstappen at Red Bull
 (1, 2, 2, 42.00, CURRENT_TIMESTAMP), -- Hamilton at Mercedes  
 (1, 3, 3, 38.75, CURRENT_TIMESTAMP); -- Leclerc at Ferrari

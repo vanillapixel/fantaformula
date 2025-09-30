@@ -42,12 +42,11 @@ define('DEFAULT_MAX_DRIVERS', 6);
 // Timezone
 date_default_timezone_set('UTC');
 
-// Auto-include commonly used files
+# Auto-include commonly used files
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/../database/migrations_runner.php';
 require_once __DIR__ . '/../utils/response.php';
 require_once __DIR__ . '/../middleware/cors.php';
-
-// Initialize CORS for all requests
+// Re-enable PHP CORS handling (Apache centralized config not active in current container)
 handleCORS();
 ?>
