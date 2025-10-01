@@ -50,9 +50,9 @@ try {
     $loginValue = !empty($input['username']) ? $input['username'] : $input['email'];
     
     $stmt = $db->prepare("
-        SELECT id, username, email, password_hash, created_at, IFNULL(is_super_admin,0) as is_super_admin
+        SELECT id, username, email, password_hash, created_at, COALESCE(is_super_admin,0) as is_super_admin
         FROM users 
-        WHERE $loginField = ?
+        WHERE " . $loginField . " = ?
     ");
     
     $stmt->execute([$loginValue]);

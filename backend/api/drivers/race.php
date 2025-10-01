@@ -65,17 +65,17 @@ try {
                     ft.logo_url as constructor_logo_url,
                     rd.id as race_driver_id,
                     rd.price,
-                    rd.ai_calculated_at,
+                    rd.created_at,
                     rr.qualifying_position,
                     rr.race_position,
                     rr.fastest_lap,
                     rr.dnf,
-                    rr.points_earned
+                    NULL as points_earned
                 FROM race_drivers rd
                 JOIN drivers d ON rd.driver_id = d.id
                 JOIN constructors ft ON rd.constructor_id = ft.id
                 LEFT JOIN race_results rr ON rd.race_id = rr.race_id AND rd.driver_id = rr.driver_id
-                WHERE rd.race_id = ? AND d.active = 1
+                WHERE rd.race_id = ?
                 ORDER BY rd.price DESC, d.last_name ASC
             ");
             $stmt->execute([$raceId]);
@@ -92,7 +92,8 @@ try {
                 $driver['race_position'] = $driver['race_position'] ? (int)$driver['race_position'] : null;
                 $driver['fastest_lap'] = (bool)$driver['fastest_lap'];
                 $driver['dnf'] = (bool)$driver['dnf'];
-                $driver['points_earned'] = $driver['points_earned'] ? (float)$driver['points_earned'] : null;
+                // points_earned removed from schema; keep field for backward compatibility (always null)
+                $driver['points_earned'] = null;
                 
                 // Add affordability info
                 $driver['affordable'] = $driver['price'] <= $race['effective_budget'];

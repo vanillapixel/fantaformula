@@ -5,7 +5,10 @@ FROM php:8.3-apache
 RUN apt-get update && apt-get install -y \
     sqlite3 \
     libsqlite3-dev \
+    git \
+    unzip \
     && docker-php-ext-install pdo pdo_sqlite \
+    && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
     && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache modules
@@ -16,6 +19,7 @@ WORKDIR /var/www/html
 
 # Copy application files
 COPY . .
+RUN composer install --no-dev --prefer-dist --optimize-autoloader || true
 
 # Add centralized Apache CORS config
 COPY backend/apache/cors.conf /etc/apache2/conf-available/cors.conf

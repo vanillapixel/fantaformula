@@ -182,8 +182,8 @@ _Actual F1 race results for points calculation_
 - race_position (INTEGER)
 - fastest_lap (BOOLEAN DEFAULT false)
 - dnf (BOOLEAN DEFAULT false) -- Did Not Finish
-- points_earned (DECIMAL(6,2)) -- calculated fantasy points
-- calculated_at (DATETIME)
+- dns (BOOLEAN DEFAULT false) -- Did Not Start
+- created_at (DATETIME)
 - UNIQUE(race_id, driver_id)
 ```
 
@@ -199,8 +199,6 @@ _User's fantasy lineup setup for each race (renamed from user_race_teams)_
 - race_id (INTEGER REFERENCES races(id))
 - championship_id (INTEGER REFERENCES championships(id))
 - drs_enabled (BOOLEAN DEFAULT true)
-- total_cost (DECIMAL(6,2))
-- total_points (DECIMAL(6,2)) -- calculated after race
 - submitted_at (DATETIME)
 - UNIQUE(user_id, race_id, championship_id)
 ```

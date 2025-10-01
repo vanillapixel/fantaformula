@@ -2,12 +2,37 @@
 // Lightweight migrations runner
 // Adds new columns / minor schema changes safely (idempotent)
 
-require_once __DIR__ . '/../config/database.php';
+// Ensure full config (defines DB_PATH) is loaded if not already
+if (!defined('DB_PATH')) {
+    require_once __DIR__ . '/../config/config.php';
+} else {
+    require_once __DIR__ . '/../config/database.php';
+}
 
 $__ff_migration_messages = [];
 
 function ff_applyMigrations(PDO $db) {
     global $__ff_migration_messages;
+    // Bootstrap baseline schema if core tables missing
+    try {
+        $tables = $db->query("SELECT name FROM sqlite_master WHERE type='table'")->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        if (!in_array('users',$tables) || !in_array('seasons',$tables)) {
+            $baselineFile = __DIR__ . '/migrations/20250101000000_baseline_schema.php';
+            if (is_file($baselineFile)) {
+                $ret = require $baselineFile;
+                if (is_array($ret) && isset($ret['up']) && is_callable($ret['up'])) {
+                    $ret['up']($db);
+                    $__ff_migration_messages[] = 'Applied baseline schema (auto)';
+                } else {
+                    $__ff_migration_messages[] = 'Baseline file present but malformed';
+                }
+            } else {
+                $__ff_migration_messages[] = 'Baseline schema file missing; proceeding';
+            }
+        }
+    } catch (Exception $e) {
+        $__ff_migration_messages[] = 'Baseline bootstrap failed: '.$e->getMessage();
+    }
     // 0. Rename f1_teams -> constructors and column f1_team_id -> constructor_id in race_drivers
     try {
         // Detect if old table exists and new one not yet created
@@ -171,6 +196,101 @@ function ff_applyMigrations(PDO $db) {
     } catch (Exception $e) {
         error_log('Migration (seed 2025 races) failed: ' . $e->getMessage());
         $__ff_migration_messages[] = 'Failed seeding races: ' . $e->getMessage();
+    }
+
+    // 4 & 5 (dynamic schema rebuilds) removed; now handled via discrete migration files in migrations/ directory
+    ff_runFolderMigrations($db);
+}
+
+// Execute discrete migration files located in migrations/ directory.
+// Naming convention: YYYYMMDDHHMMSS_description.php returning a callable or defining $migration callable.
+function ff_runFolderMigrations(PDO $db) {
+    global $__ff_migration_messages;
+    $dir = __DIR__ . '/migrations';
+    if (!is_dir($dir)) { $__ff_migration_messages[] = 'No migrations directory present (skipping folder migrations)'; return; }
+    // Ensure tracking table exists
+    $db->exec('CREATE TABLE IF NOT EXISTS migrations_run (id INTEGER PRIMARY KEY AUTOINCREMENT, migration_name TEXT UNIQUE NOT NULL, executed_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
+    $done = $db->query('SELECT migration_name FROM migrations_run')->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    $files = glob($dir . '/*.php');
+    sort($files, SORT_STRING);
+    foreach ($files as $file) {
+        $base = basename($file);
+        if (!preg_match('/^\\d{14}_.+\\.php$/', $base)) { $__ff_migration_messages[] = "Skipping file $base (invalid name)"; continue; }
+        if (in_array($base, $done, true)) { continue; }
+        try {
+            $db->beginTransaction();
+            $returned = require $file; // May return callable or array with up/down
+            $callable = null; $isArray = false;
+            if (is_array($returned) && (isset($returned['up']) || isset($returned['down']))) { $isArray = true; }
+            if ($isArray) {
+                if (!isset($returned['up']) || !is_callable($returned['up'])) { throw new Exception('Array migration missing up callable'); }
+                $returned['up']($db);
+            } else {
+                $callable = $returned;
+                if (!is_callable($callable)) {
+                    if (isset($GLOBALS['migration']) && is_callable($GLOBALS['migration'])) { $callable = $GLOBALS['migration']; }
+                    else { throw new Exception('Migration file did not provide callable or array'); }
+                }
+                $callable($db);
+            }
+            $stmt = $db->prepare('INSERT INTO migrations_run (migration_name) VALUES (?)');
+            $stmt->execute([$base]);
+            $db->commit();
+            $__ff_migration_messages[] = "Executed migration $base";
+        } catch (Exception $e) {
+            try { $db->rollBack(); } catch (Exception $ignore) {}
+            $__ff_migration_messages[] = "Migration $base failed: " . $e->getMessage();
+            error_log('Migration failed ('.$base.'): '.$e->getMessage());
+            break; // stop further migrations on failure
+        }
+    }
+}
+
+// CLI helper: php migrations_runner.php make <name>
+if (php_sapi_name()==='cli' && realpath(__FILE__)===realpath($_SERVER['SCRIPT_FILENAME'])) {
+    $argv = $_SERVER['argv'];
+    if (isset($argv[1]) && $argv[1]==='make') {
+        $name = $argv[2] ?? null;
+        if (!$name) { echo "Usage: php migrations_runner.php make <snake_case_name>\n"; exit(1); }
+        $ts = date('YmdHis');
+        $safe = preg_replace('/[^a-z0-9_]/','_', strtolower($name));
+        $dir = __DIR__ . '/migrations'; if (!is_dir($dir)) mkdir($dir,0777,true);
+        $path = $dir . '/' . $ts . '_' . $safe . '.php';
+        $template = "<?php\n// Migration: $safe\nreturn [\n  'up' => function(PDO $db) {\n    // TODO: add up migration SQL here\n  },\n  'down' => function(PDO $db) {\n    // TODO: add down migration SQL here (optional)\n  }\n];\n";
+        file_put_contents($path,$template);
+        echo "Created migration $path\n"; exit(0);
+    } elseif (isset($argv[1]) && ($argv[1]==='down' || $argv[1]==='rollback')) {
+        $steps = isset($argv[2]) ? (int)$argv[2] : 1;
+        if ($steps < 1) { echo "Steps must be >=1\n"; exit(1); }
+        $db = getDB();
+        $db->exec('CREATE TABLE IF NOT EXISTS migrations_run (id INTEGER PRIMARY KEY AUTOINCREMENT, migration_name TEXT UNIQUE NOT NULL, executed_at DATETIME DEFAULT CURRENT_TIMESTAMP)');
+        $stmt = $db->query('SELECT migration_name FROM migrations_run ORDER BY executed_at DESC, id DESC');
+        $applied = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if (empty($applied)) { echo "No migrations applied.\n"; exit(0); }
+        $toRollback = array_slice($applied,0,$steps);
+        foreach ($toRollback as $mig) {
+            $file = __DIR__ . '/migrations/' . $mig;
+            if (!is_file($file)) { echo "Skipping missing file $mig\n"; continue; }
+            $returned = require $file;
+            $downCallable = null; $hasDown = false;
+            if (is_array($returned) && isset($returned['down']) && is_callable($returned['down'])) { $downCallable = $returned['down']; $hasDown=true; }
+            elseif (is_callable($returned) && function_exists('migration_down_placeholder')) { // unused pattern
+                $downCallable = null; $hasDown=false; }
+            if (!$hasDown) { echo "No down() for $mig (skipping)\n"; continue; }
+            try {
+                $db->beginTransaction();
+                $downCallable($db);
+                $del = $db->prepare('DELETE FROM migrations_run WHERE migration_name = ?');
+                $del->execute([$mig]);
+                $db->commit();
+                echo "Rolled back $mig\n";
+            } catch (Exception $e) {
+                try { $db->rollBack(); } catch (Exception $ignore) {}
+                echo "Failed to rollback $mig: " . $e->getMessage() . "\n";
+                break;
+            }
+        }
+        exit(0);
     }
 }
 

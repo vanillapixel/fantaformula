@@ -28,7 +28,7 @@ function handleGetResults() {
     $raceId = (int)($_GET['race_id'] ?? 0);
     if (!$raceId) sendValidationError(['race_id'=>'Required']);
     $db = getDB();
-    $stmt = $db->prepare("SELECT rr.id, rr.race_id, rr.driver_id, rr.position, rr.fastest_lap, rr.dnf, rr.points_awarded,
+    $stmt = $db->prepare("SELECT rr.id, rr.race_id, rr.driver_id, rr.race_position as position, rr.fastest_lap, rr.dnf,
                                  d.first_name, d.last_name
                           FROM race_results rr
                           JOIN drivers d ON rr.driver_id = d.id
@@ -55,52 +55,33 @@ function handlePostResults() {
 
     $db->beginTransaction();
     try {
-        $db->prepare('DELETE FROM race_results WHERE race_id = ?')->execute([$raceId]);
-        $ins = $db->prepare('INSERT INTO race_results (race_id, driver_id, position, fastest_lap, dnf, points_awarded) VALUES (?,?,?,?,?,?)');
+    $db->prepare('DELETE FROM race_results WHERE race_id = ?')->execute([$raceId]);
+    $ins = $db->prepare('INSERT INTO race_results (race_id, driver_id, race_position, fastest_lap, dnf, calculated_at) VALUES (?,?,?,?,?,CURRENT_TIMESTAMP)');
 
-        $positionPointsCache = [];
+        // Build position-based scoring from season_rules.driver_finish_points JSON
+        $finishPoints = isset($rules['driver_finish_points']) && $rules['driver_finish_points'] ? json_decode($rules['driver_finish_points'], true) : [];
+        if (!is_array($finishPoints) || empty($finishPoints)) {
+            $finishPoints = [150,125,100,90,80,75,70,65,60,55,50,45,40,35,30,25,20,15,10,5];
+        }
         $totalDriverPoints = [];
         foreach ($results as $row) {
             $driverId = (int)($row['driver_id'] ?? 0);
             $position = isset($row['position']) ? (int)$row['position'] : null;
             $fastest = !empty($row['fastest_lap']);
             $dnf = !empty($row['dnf']);
-            if (!$driverId || !$position) {
-                $db->rollBack();
-                sendValidationError(['results'=>'Each result needs driver_id & position']);
-            }
-            if (!isset($positionPointsCache[$position])) {
-                $col = 'p'.$position.'_points';
-                $positionPointsCache[$position] = isset($rules[$col]) ? (float)$rules[$col] : 0.0;
-            }
-            $points = $positionPointsCache[$position];
-            if ($fastest && isset($rules['fastest_lap_points'])) $points += (float)$rules['fastest_lap_points'];
-            if ($dnf && isset($rules['dnf_penalty'])) $points -= (float)$rules['dnf_penalty'];
-            $ins->execute([$raceId,$driverId,$position,$fastest?1:0,$dnf?1:0,$points]);
+            if (!$driverId || !$position) { $db->rollBack(); sendValidationError(['results'=>'Each result needs driver_id & position']); }
+            $base = ($position >=1 && $position <= count($finishPoints)) ? (float)$finishPoints[$position-1] : 0.0;
+            // simple fastest lap bonus if configured
+            $bonusFL = (!empty($fastest) && isset($rules['fastest_lap_points'])) ? (float)$rules['fastest_lap_points'] : 0.0;
+            $penaltyDnf = (!empty($dnf) && isset($rules['dnf_penalty'])) ? (float)$rules['dnf_penalty'] : 0.0;
+            $points = $base + $bonusFL - $penaltyDnf;
+            $ins->execute([$raceId,$driverId,$position,$fastest?1:0,$dnf?1:0]);
             $totalDriverPoints[$driverId] = $points;
         }
 
-    // Recompute lineup points
-    $teamSelect = $db->prepare("SELECT url.id, usd.race_driver_id, rd.driver_id
-                     FROM user_race_lineups url
-                     JOIN user_selected_drivers usd ON url.id = usd.user_race_lineup_id
-                     JOIN race_drivers rd ON usd.race_driver_id = rd.id
-                     WHERE url.race_id = ?");
-        $teamSelect->execute([$raceId]);
-        $teamDrivers = $teamSelect->fetchAll(PDO::FETCH_ASSOC);
-        $pointsByTeam = [];
-        foreach ($teamDrivers as $td) {
-            $pid = (int)$td['id'];
-            $drvId = (int)$td['driver_id'];
-            $pointsByTeam[$pid] = ($pointsByTeam[$pid] ?? 0) + ($totalDriverPoints[$drvId] ?? 0);
-        }
-    $upd = $db->prepare('UPDATE user_race_lineups SET total_points = ? WHERE id = ?');
-        foreach ($pointsByTeam as $teamId=>$pts) {
-            $upd->execute([$pts,$teamId]);
-        }
-
-        $db->commit();
-    sendSuccess(['race_id'=>$raceId,'updated_results'=>count($results),'lineups_scored'=>count($pointsByTeam)], 'Results saved & lineups scored');
+    // No persistence of lineup totals anymore (dynamic scoring).
+    $db->commit();
+    sendSuccess(['race_id'=>$raceId,'updated_results'=>count($results)], 'Results saved (dynamic scoring)');
     } catch (Exception $e) {
         $db->rollBack();
         throw $e;

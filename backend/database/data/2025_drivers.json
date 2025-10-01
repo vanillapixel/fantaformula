@@ -1,0 +1,162 @@
+[
+    {
+        "first_name": "Max",
+        "last_name": "Verstappen",
+        "number": 1,
+        "code": "VER",
+        "nationality": "Netherlands",
+        "constructor": "Red Bull Racing"
+    },
+    {
+        "first_name": "Liam",
+        "last_name": "Lawson",
+        "number": 30,
+        "code": "LAW",
+        "nationality": "New Zealand",
+        "constructor": "Racing Bulls / (Red Bull first part season)"
+    },
+    {
+        "first_name": "Charles",
+        "last_name": "Leclerc",
+        "number": 16,
+        "code": "LEC",
+        "nationality": "Monaco",
+        "constructor": "Ferrari"
+    },
+    {
+        "first_name": "Lewis",
+        "last_name": "Hamilton",
+        "number": 44,
+        "code": "HAM",
+        "nationality": "United Kingdom",
+        "constructor": "Ferrari"
+    },
+    {
+        "first_name": "George",
+        "last_name": "Russell",
+        "number": 63,
+        "code": "RUS",
+        "nationality": "United Kingdom",
+        "constructor": "Mercedes"
+    },
+    {
+        "first_name": "Andrea Kimi",
+        "last_name": "Antonelli",
+        "number": 12,
+        "code": "AAN",
+        "nationality": "Italy",
+        "constructor": "Mercedes"
+    },
+    {
+        "first_name": "Lando",
+        "last_name": "Norris",
+        "number": 4,
+        "code": "NOR",
+        "nationality": "United Kingdom",
+        "constructor": "McLaren"
+    },
+    {
+        "first_name": "Oscar",
+        "last_name": "Piastri",
+        "number": 81,
+        "code": "PIA",
+        "nationality": "Australia",
+        "constructor": "McLaren"
+    },
+    {
+        "first_name": "Fernando",
+        "last_name": "Alonso",
+        "number": 14,
+        "code": "ALO",
+        "nationality": "Spain",
+        "constructor": "Aston Martin"
+    },
+    {
+        "first_name": "Lance",
+        "last_name": "Stroll",
+        "number": 18,
+        "code": "STR",
+        "nationality": "Canada",
+        "constructor": "Aston Martin"
+    },
+    {
+        "first_name": "Pierre",
+        "last_name": "Gasly",
+        "number": 10,
+        "code": "GAS",
+        "nationality": "France",
+        "constructor": "Alpine"
+    },
+    {
+        "first_name": "Jack",
+        "last_name": "Doohan",
+        "number": 7,
+        "code": "DOO",
+        "nationality": "Australia",
+        "constructor": "Alpine"
+    },
+    {
+        "first_name": "Yuki",
+        "last_name": "Tsunoda",
+        "number": 22,
+        "code": "TSU",
+        "nationality": "Japan",
+        "constructor": "Red Bull Racing"
+    },
+    {
+        "first_name": "Isack",
+        "last_name": "Hadjar",
+        "number": 6,
+        "code": "HAD",
+        "nationality": "France",
+        "constructor": "Racing Bulls"
+    },
+    {
+        "first_name": "Gabriel",
+        "last_name": "Bortoleto",
+        "number": 5,
+        "code": "BOR",
+        "nationality": "Brazil",
+        "constructor": "Kick Sauber"
+    },
+    {
+        "first_name": "Nico",
+        "last_name": "Hulkenberg",
+        "number": 27,
+        "code": "HUL",
+        "nationality": "Germany",
+        "constructor": "Kick Sauber"
+    },
+    {
+        "first_name": "Alex",
+        "last_name": "Albon",
+        "number": 23,
+        "code": "ALB",
+        "nationality": "Thailand",
+        "constructor": "Williams"
+    },
+    {
+        "first_name": "Carlos",
+        "last_name": "Sainz",
+        "number": 55,
+        "code": "SAI",
+        "nationality": "Spain",
+        "constructor": "Williams"
+    },
+    {
+        "first_name": "Esteban",
+        "last_name": "Ocon",
+        "number": 31,
+        "code": "OCO",
+        "nationality": "France",
+        "constructor": "Haas"
+    },
+    {
+        "first_name": "Oliver",
+        "last_name": "Bearman",
+        "number": 87,
+        "code": "BEA",
+        "nationality": "United Kingdom",
+        "constructor": "Haas"
+    }
+]

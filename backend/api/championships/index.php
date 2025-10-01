@@ -93,19 +93,9 @@ try {
             $stmt->execute($params);
             $championships = $stmt->fetchAll();
             
-            // Format response + attach per-user standings (points & position) if user_id filter was provided
+            // Format response + attach per-user standings (championship points & position) if user_id filter was provided
             $userIdInt = $user_id ? (int)$user_id : null;
-            $standStmt = null;
-            if ($userIdInt) {
-                $standStmt = $db->prepare(
-                    'SELECT cp.user_id, COALESCE(SUM(url.total_points),0) AS total_points ' .
-                    'FROM championship_participants cp ' .
-                    'LEFT JOIN user_race_lineups url ON url.championship_id = cp.championship_id AND url.user_id = cp.user_id ' .
-                    'WHERE cp.championship_id = ? ' .
-                    'GROUP BY cp.user_id ' .
-                    'ORDER BY total_points DESC, cp.user_id ASC'
-                );
-            }
+            // We'll calculate ranking-based championship points using season_rules.user_position_points array
 
             foreach ($championships as &$championship) {
                 $championship['id'] = (int)$championship['id'];
@@ -116,26 +106,78 @@ try {
                 $championship['admin_usernames'] = $championship['admin_usernames'] ? explode(',', $championship['admin_usernames']) : [];
 
                 if ($userIdInt) {
-                    $championship['user_points'] = 0.0;
+                    $championship['user_points'] = 0.0; // championship points (ranking-based)
+                    $championship['user_raw_points'] = 0.0; // sum of dynamic lineup points (tie-breaker/info)
                     $championship['user_position'] = null; // null -> frontend can render '-'
-                    $standStmt->execute([$championship['id']]);
-                    $rowsPts = $standStmt->fetchAll(PDO::FETCH_ASSOC);
-                    $rank = 0; $lastPts = null; $index = 0; $found = false;
-                    foreach ($rowsPts as $r) {
-                        $index++; $pts = (float)$r['total_points'];
-                        if ($lastPts === null || $pts < $lastPts) { $rank = $index; $lastPts = $pts; }
-                        if ((int)$r['user_id'] === $userIdInt) {
-                            $championship['user_points'] = $pts;
-                            $championship['user_position'] = $rank;
-                            $found = true; break; // we can break once found
+
+                    // Load ranking config
+                    $cfgStmt = $db->prepare('SELECT sr.user_position_points FROM championships c JOIN seasons s ON c.season_id = s.id JOIN season_rules sr ON sr.season_id = s.id WHERE c.id = ? LIMIT 1');
+                    $cfgStmt->execute([$championship['id']]);
+                    $rankingConfig = $cfgStmt->fetchColumn();
+                    $rankingArray = $rankingConfig ? json_decode($rankingConfig, true) : [25,18,14,10,6,3,1];
+                    if (!is_array($rankingArray) || empty($rankingArray)) { $rankingArray = [25,18,14,10,6,3,1]; }
+
+                    // Collect race IDs
+                    $raceStmt = $db->prepare('SELECT DISTINCT race_id FROM user_race_lineups WHERE championship_id = ?');
+                    $raceStmt->execute([$championship['id']]);
+                    $raceIds = $raceStmt->fetchAll(PDO::FETCH_COLUMN);
+
+                    $userChampPoints = []; $userRawSum = [];
+                    if ($raceIds) {
+                        $rules = ff_loadSeasonRulesForRace($db, $raceIds[0]) ?: [];
+                        foreach ($raceIds as $rid) {
+                            // compute per-race driver points then per-lineup totals
+                            $rules = ff_loadSeasonRulesForRace($db, $rid) ?: $rules;
+                            $driverPts = ff_computeDriverPoints($db, $rid, $rules);
+                            $lineupStmt = $db->prepare('SELECT id, user_id, submitted_at FROM user_race_lineups WHERE championship_id = ? AND race_id = ?');
+                            $lineupStmt->execute([$championship['id'], $rid]);
+                            $lineups = $lineupStmt->fetchAll(PDO::FETCH_ASSOC);
+                            // rank by dynamic points
+                            $calc = [];
+                            foreach ($lineups as $lu) {
+                                $pts = ff_computeLineupPoints($db, (int)$lu['id'], $driverPts);
+                                $calc[] = [ 'user_id'=>(int)$lu['user_id'], 'points'=>$pts, 'submitted_at'=>$lu['submitted_at'] ];
+                                $userRawSum[(int)$lu['user_id']] = ($userRawSum[(int)$lu['user_id']] ?? 0) + $pts;
+                            }
+                            usort($calc, function($a,$b){ if ($b['points']==$a['points']) return strcmp($a['submitted_at'],$b['submitted_at']); return $b['points'] <=> $a['points']; });
+                            $lastVal=null; $rank=0; $idx=0; foreach ($calc as $row) {
+                                $idx++; $val=$row['points']; if ($lastVal===null || $val < $lastVal){ $rank=$idx; $lastVal=$val; }
+                                if ($rank <= count($rankingArray)) {
+                                    $uid=$row['user_id'];
+                                    $userChampPoints[$uid] = ($userChampPoints[$uid] ?? 0) + $rankingArray[$rank-1];
+                                }
+                            }
                         }
                     }
-                    if (!$found) {
-                        // user not yet with any lineup -> points 0 position participant_count (at bottom)
-                        if ($championship['participant_count'] > 0) {
-                            $championship['user_points'] = 0.0;
-                            $championship['user_position'] = $championship['participant_count'];
+                    // Ensure participants are represented
+                    $pStmt = $db->prepare('SELECT user_id FROM championship_participants WHERE championship_id = ?');
+                    $pStmt->execute([$championship['id']]);
+                    $participantIds = $pStmt->fetchAll(PDO::FETCH_COLUMN);
+                    foreach ($participantIds as $pid) {
+                        $pid = (int)$pid; if (!isset($userChampPoints[$pid])) { $userChampPoints[$pid] = 0; }
+                        if (!isset($userRawSum[$pid])) { $userRawSum[$pid] = 0; }
+                    }
+                    // Build standings for ordering
+                    $stand = [];
+                    foreach ($userChampPoints as $uid=>$cpts) {
+                        $stand[] = [ 'user_id'=>$uid, 'champ_points'=>$cpts, 'raw'=>$userRawSum[$uid] ];
+                    }
+                    usort($stand, function($a,$b){ if ($b['champ_points']==$a['champ_points']) { if ($b['raw']==$a['raw']) return $a['user_id'] <=> $b['user_id']; return $b['raw'] <=> $a['raw']; } return $b['champ_points'] <=> $a['champ_points']; });
+                    $lastChamp = null; $rank = 0; $idx = 0; $found=false;
+                    foreach ($stand as $row) {
+                        $idx++; $cp = $row['champ_points'];
+                        if ($lastChamp === null || $cp < $lastChamp) { $rank = $idx; $lastChamp = $cp; }
+                        if ($row['user_id'] === $userIdInt) {
+                            $championship['user_points'] = (float)$cp; // ranking-based
+                            $championship['user_raw_points'] = (float)$row['raw'];
+                            $championship['user_position'] = $rank;
+                            $found = true; break;
                         }
+                    }
+                    if (!$found && $championship['participant_count'] > 0) {
+                        $championship['user_points'] = 0.0;
+                        $championship['user_raw_points'] = 0.0;
+                        $championship['user_position'] = $championship['participant_count'];
                     }
                 }
             }

@@ -48,11 +48,10 @@ function ff_handleGetLineup() {
 
     if ($viewAll) {
         if (!$championshipId) sendValidationError(['championship_id' => 'Required when all=1']);
-        $stmt = $db->prepare("SELECT url.id, url.user_id, url.total_points, url.total_cost, url.drs_enabled, url.submitted_at, u.username
-                   FROM user_race_lineups url
-                               JOIN users u ON url.user_id = u.id
-                   WHERE url.race_id = :race AND url.championship_id = :champ
-                   ORDER BY url.total_points DESC, url.total_cost ASC, url.submitted_at ASC");
+    $stmt = $db->prepare("SELECT url.id, url.user_id, url.drs_enabled, url.submitted_at, u.username
+           FROM user_race_lineups url
+           JOIN users u ON url.user_id = u.id
+           WHERE url.race_id = :race AND url.championship_id = :champ");
         $stmt->execute([':race'=>$raceId, ':champ'=>$championshipId]);
         $lineups = $stmt->fetchAll(PDO::FETCH_ASSOC);
         if ($lineups) {
@@ -72,9 +71,24 @@ function ff_handleGetLineup() {
                     'price'=>(float)$row['price']
                 ];
             }
+            // Load rules + driver points once (shared raceId)
+            $rules = ff_loadSeasonRulesForRace($db, $raceId) ?: [];
+            $driverPts = ff_computeDriverPoints($db, $raceId, $rules);
             foreach ($lineups as &$l) {
                 $l['drivers'] = $byId[$l['id']] ?? [];
+                $l['calculated_cost'] = array_sum(array_column($l['drivers'],'price'));
+                $l['calculated_points'] = ff_computeLineupPoints($db, (int)$l['id'], $driverPts);
             }
+            // Sort in PHP by calculated_points DESC then cost ASC then submitted_at ASC
+            usort($lineups, function($a,$b){
+                if ($b['calculated_points'] == $a['calculated_points']) {
+                    if ($a['calculated_cost'] == $b['calculated_cost']) {
+                        return strcmp($a['submitted_at'], $b['submitted_at']);
+                    }
+                    return $a['calculated_cost'] <=> $b['calculated_cost'];
+                }
+                return $b['calculated_points'] <=> $a['calculated_points'];
+            });
         }
         sendSuccess(['race_id'=>$raceId,'championship_id'=>$championshipId,'lineups'=>$lineups]);
     }
@@ -82,7 +96,7 @@ function ff_handleGetLineup() {
     $userId = $requestedUserId ?: $currentUserId;
     if (!$userId) sendUnauthorized();
 
-    $stmt = $db->prepare("SELECT * FROM user_race_lineups WHERE user_id = :uid AND race_id = :race" . ($championshipId?" AND championship_id = :champ":"") . " LIMIT 1");
+    $stmt = $db->prepare("SELECT id, user_id, race_id, championship_id, drs_enabled, submitted_at FROM user_race_lineups WHERE user_id = :uid AND race_id = :race" . ($championshipId?" AND championship_id = :champ":"") . " LIMIT 1");
     $params = [':uid'=>$userId, ':race'=>$raceId];
     if ($championshipId) $params[':champ']=$championshipId;
     $stmt->execute($params);
@@ -109,6 +123,10 @@ function ff_handleGetLineup() {
     }
     $lineup['drivers'] = $drivers;
     $lineup['calculated_cost'] = $cost;
+    // dynamic points (on-demand)
+    $rules = ff_loadSeasonRulesForRace($db, $raceId) ?: [];
+    $driverPts = ff_computeDriverPoints($db, $raceId, $rules);
+    $lineup['calculated_points'] = ff_computeLineupPoints($db, (int)$lineup['id'], $driverPts);
     sendSuccess($lineup, 'Lineup retrieved');
 }
 
@@ -161,12 +179,12 @@ function ff_handleUpsertLineup() {
         $sel->execute([$userId,$raceId,$championshipId]);
         $lineupId = $sel->fetchColumn();
         if ($lineupId) {
-            $upd = $db->prepare("UPDATE user_race_lineups SET drs_enabled = ?, total_cost = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?");
-            $upd->execute([$drsEnabled?1:0,$totalCost,$lineupId]);
+            $upd = $db->prepare("UPDATE user_race_lineups SET drs_enabled = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?");
+            $upd->execute([$drsEnabled?1:0,$lineupId]);
             $db->prepare("DELETE FROM user_selected_drivers WHERE user_race_lineup_id = ?")->execute([$lineupId]);
         } else {
-            $ins = $db->prepare("INSERT INTO user_race_lineups (user_id,race_id,championship_id,drs_enabled,total_cost,total_points,submitted_at) VALUES (?,?,?,?,?,0,CURRENT_TIMESTAMP)");
-            $ins->execute([$userId,$raceId,$championshipId,$drsEnabled?1:0,$totalCost]);
+            $ins = $db->prepare("INSERT INTO user_race_lineups (user_id,race_id,championship_id,drs_enabled,submitted_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP)");
+            $ins->execute([$userId,$raceId,$championshipId,$drsEnabled?1:0]);
             $lineupId = (int)$db->lastInsertId();
         }
         $insSel = $db->prepare("INSERT INTO user_selected_drivers (user_race_lineup_id,race_driver_id) VALUES (?,?)");

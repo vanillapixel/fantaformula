@@ -1,6 +1,8 @@
 <?php
 // Fantasy Formula 1 - Database Connection
 
+// NOTE: DB_PATH must be defined in config.php before this file is loaded (strict mode – no fallback).
+
 class Database {
     private static $instance = null;
     private $connection;

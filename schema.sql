@@ -150,8 +150,8 @@ CREATE TABLE race_results (
     race_position INTEGER,
     fastest_lap BOOLEAN DEFAULT 0,
     dnf BOOLEAN DEFAULT 0, -- Did Not Finish
-    points_earned DECIMAL(6,2), -- calculated fantasy points
-    calculated_at DATETIME,
+    dns BOOLEAN DEFAULT 0, -- Did Not Start
+    created_at DATETIME,
     FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
     FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE,
     UNIQUE(race_id, driver_id)
@@ -168,8 +168,6 @@ CREATE TABLE user_race_lineups (
     race_id INTEGER NOT NULL,
     championship_id INTEGER NOT NULL,
     drs_enabled BOOLEAN DEFAULT 1,
-    total_cost DECIMAL(6,2),
-    total_points DECIMAL(6,2), -- calculated after race
     submitted_at DATETIME,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,

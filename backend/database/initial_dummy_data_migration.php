@@ -73,7 +73,7 @@ function ff_seedDummyData(PDO $db, array &$messages) {
             $add('Championship', true, 'Created demo championship');
         } else { $add('Championship', true, 'Demo championship already exists'); }
 
-        // Championship admin + participants
+    // Championship admin + participants
         $adminId = $userIds['adminuser'];
         $chkAdmin = $db->prepare('SELECT 1 FROM championship_admins WHERE championship_id = ? AND user_id = ?');
         $chkAdmin->execute([$championshipId,$adminId]);
@@ -82,64 +82,68 @@ function ff_seedDummyData(PDO $db, array &$messages) {
         $insPart = $db->prepare('INSERT INTO championship_participants (championship_id,user_id,joined_at) VALUES (?,?,CURRENT_TIMESTAMP)');
         foreach ($userIds as $uid) { $chkPart->execute([$championshipId,$uid]); if (!$chkPart->fetch()) { $insPart->execute([$championshipId,$uid]); $add('Participants', true, "Added participant (user id $uid)"); } else { $add('Participants', true, "Participant already linked (user id $uid)"); } }
 
-        // Constructors (full 2025 grid)
-        $constructors = [
-            ['Red Bull Racing','RBR','#0600EF'],
-            ['Mercedes','MER','#00D2BE'],
-            ['Ferrari','FER','#DC0000'],
-            ['McLaren','MCL','#FF8700'],
-            ['Aston Martin','AMR','#006F62'],
-            ['Alpine','ALP','#2293D1'],
-            ['Williams','WIL','#005AFF'],
-            ['RB','RB','#6692FF'],
-            ['Haas','HAA','#B6BABD'],
-            ['Sauber','SAU','#52E252']
+        // Load 2025 drivers with constructor names
+        $driversFile = __DIR__ . '/data/2025_drivers.json';
+        if (!file_exists($driversFile)) { throw new RuntimeException('Missing drivers data file: ' . $driversFile); }
+        $driversData = json_decode(file_get_contents($driversFile), true);
+        if (!is_array($driversData)) { throw new RuntimeException('Invalid JSON in drivers file'); }
+
+        // Map full constructor names to canonical short names + colors
+        $constructorMapDefs = [
+            'red bull racing' => ['Red Bull Racing','RBR','#0600EF'],
+            'mercedes' => ['Mercedes','MER','#00D2BE'],
+            'ferrari' => ['Ferrari','FER','#DC0000'],
+            'mclaren' => ['McLaren','MCL','#FF8700'],
+            'aston martin' => ['Aston Martin','AMR','#006F62'],
+            'alpine' => ['Alpine','ALP','#2293D1'],
+            'williams' => ['Williams','WIL','#005AFF'],
+            'racing bulls' => ['Racing Bulls','RB','#6692FF'],
+            'rb' => ['Racing Bulls','RB','#6692FF'],
+            'kick sauber' => ['Kick Sauber','SAU','#52E252'],
+            'sauber' => ['Kick Sauber','SAU','#52E252'],
+            'haas' => ['Haas','HAA','#B6BABD']
         ];
+        $constructorsNormalized = [];
+        foreach ($driversData as $d) {
+            $raw = $d['constructor'] ?? '';
+            $normKey = strtolower(trim(preg_replace('/\s+\/.*$/','', $raw))); // trim extra commentary after slash
+            if ($normKey === '') continue;
+            if (!isset($constructorMapDefs[$normKey])) {
+                // Fallback generic short from first 3 uppercase letters
+                $short = strtoupper(substr(preg_replace('/[^A-Za-z]/','',$normKey),0,3));
+                $constructorMapDefs[$normKey] = [ucwords($raw), $short, '#666666'];
+            }
+            $meta = $constructorMapDefs[$normKey];
+            $constructorsNormalized[$meta[1]] = $meta; // key by short
+        }
+        // Insert constructors
         $constructorIds = [];
-        $selCons = $db->prepare('SELECT id FROM constructors WHERE season_id = ? AND name = ?');
+        $selCons = $db->prepare('SELECT id FROM constructors WHERE season_id = ? AND short_name = ?');
         $insCons = $db->prepare('INSERT INTO constructors (season_id,name,short_name,color_primary) VALUES (?,?,?,?)');
-        foreach ($constructors as $c) {
-            [$name,$short,$color] = $c; $selCons->execute([$seasonId,$name]); $cid = $selCons->fetchColumn();
-            if (!$cid) { $insCons->execute([$seasonId,$name,$short,$color]); $cid = $db->lastInsertId(); $add('Constructors', true, "Inserted constructor $short"); }
-            else { $add('Constructors', true, "Constructor $short already present"); }
-            $constructorIds[$short] = $cid;
+        foreach ($constructorsNormalized as $short => [$full,$sn,$color]) {
+            $selCons->execute([$seasonId,$sn]); $cid = $selCons->fetchColumn();
+            if (!$cid) { $insCons->execute([$seasonId,$full,$sn,$color]); $cid = $db->lastInsertId(); $add('Constructors', true, "Inserted constructor $sn"); }
+            else { $add('Constructors', true, "Constructor $sn already present"); }
+            $constructorIds[$sn] = $cid;
         }
 
-        // Drivers (full grid)
-        $drivers = [
-            ['Max','Verstappen',1,'VER','Dutch'],
-            ['Sergio','Perez',11,'PER','Mexican'],
-            ['Lewis','Hamilton',44,'HAM','British'],
-            ['George','Russell',63,'RUS','British'],
-            ['Charles','Leclerc',16,'LEC','Monegasque'],
-            ['Carlos','Sainz',55,'SAI','Spanish'],
-            ['Lando','Norris',4,'NOR','British'],
-            ['Oscar','Piastri',81,'PIA','Australian'],
-            ['Fernando','Alonso',14,'ALO','Spanish'],
-            ['Lance','Stroll',18,'STR','Canadian'],
-            ['Esteban','Ocon',31,'OCO','French'],
-            ['Pierre','Gasly',10,'GAS','French'],
-            ['Alexander','Albon',23,'ALB','Thai'],
-            ['Logan','Sargeant',2,'SAR','American'],
-            ['Yuki','Tsunoda',22,'TSU','Japanese'],
-            ['Daniel','Ricciardo',3,'RIC','Australian'],
-            ['Kevin','Magnussen',20,'MAG','Danish'],
-            ['Nico','Hulkenberg',27,'HUL','German'],
-            ['Valtteri','Bottas',77,'BOT','Finnish'],
-            ['Guanyu','Zhou',24,'ZHO','Chinese']
-        ];
+        // Insert drivers (without storing constructor relation directly here)
         $driverIds = [];
         $selDriver = $db->prepare('SELECT id FROM drivers WHERE driver_code = ?');
         $insDriver = $db->prepare('INSERT INTO drivers (first_name,last_name,driver_number,driver_code,nationality) VALUES (?,?,?,?,?)');
-        foreach ($drivers as $d) {
-            [$fn,$ln,$num,$code,$nat] = $d; $selDriver->execute([$code]); $did = $selDriver->fetchColumn();
+        foreach ($driversData as $d) {
+            $fn = $d['first_name']; $ln = $d['last_name']; $num = $d['number']; $code = $d['code']; $nat = $d['nationality'];
+            $selDriver->execute([$code]); $did = $selDriver->fetchColumn();
             if (!$did) { $insDriver->execute([$fn,$ln,$num,$code,$nat]); $did = $db->lastInsertId(); $add('Drivers', true, "Inserted driver $code"); }
             else { $add('Drivers', true, "Driver $code already present"); }
             $driverIds[$code] = $did;
         }
 
-        // Add races (Dutch, Italian, Singapore) later in season + keep existing early sample races if present
+        // Add a richer subset of mid/late 2025 races (illustrative round numbers)
         $raceDefs = [
+            ['British Grand Prix','Silverstone Circuit','United Kingdom','2025-07-06 14:00:00','2025-07-05 14:00:00',12],
+            ['Hungarian Grand Prix','Hungaroring','Hungary','2025-07-20 14:00:00','2025-07-19 14:00:00',13],
+            ['Belgian Grand Prix','Spa-Francorchamps','Belgium','2025-08-03 14:00:00','2025-08-02 14:00:00',14],
             ['Dutch Grand Prix','Circuit Zandvoort','Netherlands','2025-08-24 14:00:00','2025-08-23 14:00:00',15],
             ['Italian Grand Prix','Autodromo Nazionale Monza','Italy','2025-09-07 14:00:00','2025-09-06 14:00:00',16],
             ['Singapore Grand Prix','Marina Bay Street Circuit','Singapore','2025-09-21 12:00:00','2025-09-20 12:00:00',17]
@@ -153,21 +157,24 @@ function ff_seedDummyData(PDO $db, array &$messages) {
             $raceIds[$name] = $rid;
         }
 
-        // Singapore pricing (chance-adjusted 35-50 range; highest = 50)
+    // Base pricing (chance-adjusted 35-50 range; highest = 50) for anchor race; slightly reduced for others
         $singaporePricing = [
             'VER'=>50,'NOR'=>47,'LEC'=>46,'SAI'=>44,'HAM'=>43,'PER'=>42,'RUS'=>41,'PIA'=>39,'ALO'=>38,'GAS'=>36,
             'OCO'=>35,'ALB'=>32,'TSU'=>31,'RIC'=>30,'STR'=>29,'HUL'=>28,'MAG'=>26,'BOT'=>25,'ZHO'=>24,'SAR'=>22
         ];
         // Map driver to constructor short name
-        $driverConstructorMap = [
-            'VER'=>'RBR','PER'=>'RBR','HAM'=>'MER','RUS'=>'MER','LEC'=>'FER','SAI'=>'FER','NOR'=>'MCL','PIA'=>'MCL',
-            'ALO'=>'AMR','STR'=>'AMR','OCO'=>'ALP','GAS'=>'ALP','ALB'=>'WIL','SAR'=>'WIL','TSU'=>'RB','RIC'=>'RB',
-            'MAG'=>'HAA','HUL'=>'HAA','BOT'=>'SAU','ZHO'=>'SAU'
-        ];
+    // Build driver->constructor map from loaded data
+        $driverConstructorMap = [];
+        foreach ($driversData as $d) {
+            $raw = $d['constructor'] ?? '';
+            $normKey = strtolower(trim(preg_replace('/\s+\/.*$/','', $raw)));
+            $meta = $constructorMapDefs[$normKey] ?? null;
+            if ($meta) { $driverConstructorMap[$d['code']] = $meta[1]; }
+        }
 
         // Link drivers to each seeded race (idempotent). For non-Singapore races we slightly reduce top prices (-2) to vary.
         $selRD = $db->prepare('SELECT 1 FROM race_drivers WHERE race_id = ? AND driver_id = ?');
-        $insRD = $db->prepare('INSERT INTO race_drivers (race_id,driver_id,constructor_id,price,ai_calculated_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP)');
+    $insRD = $db->prepare('INSERT INTO race_drivers (race_id,driver_id,constructor_id,price,created_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP)');
         foreach ($raceIds as $raceName => $rid) {
             foreach ($singaporePricing as $code=>$price) {
                 $driverId = $driverIds[$code] ?? null; if (!$driverId) continue; $constructorShort = $driverConstructorMap[$code]; $consId = $constructorIds[$constructorShort] ?? null; if (!$consId) continue;
@@ -179,34 +186,54 @@ function ff_seedDummyData(PDO $db, array &$messages) {
             }
         }
 
-        // Insert simple race results for each new race if absent (top 10 finishers). Points here are illustrative only.
-        $baseResultsOrder = [ ['VER',1,1,1,0,25.0], ['NOR',2,2,0,0,18.0], ['LEC',3,3,0,0,15.0], ['HAM',4,4,0,0,12.0], ['SAI',5,5,0,0,10.0], ['PER',6,6,0,0,8.0], ['RUS',7,7,0,0,6.0], ['PIA',8,8,0,0,4.0], ['ALO',9,9,0,0,2.0], ['GAS',10,10,0,0,1.0] ];
+        // Insert simple race results for each new race if absent (top 10 finishers based on 2025 drivers). Points here are illustrative only.
+    $baseResultsOrder = [ ['VER',1,1,1,0], ['NOR',2,2,0,0], ['LEC',3,3,0,0], ['HAM',4,4,0,0], ['RUS',5,5,0,0], ['PIA',6,6,0,0], ['ALO',7,7,0,0], ['GAS',8,8,0,0], ['LAW',9,9,0,0], ['AAN',10,10,0,0] ];
         $selRes = $db->prepare('SELECT 1 FROM race_results WHERE race_id = ? AND driver_id = ?');
-        $insRes = $db->prepare('INSERT INTO race_results (race_id,driver_id,qualifying_position,race_position,fastest_lap,dnf,points_earned,calculated_at) VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)');
+    // points_earned removed; calculated_at -> created_at; add dns default 0
+    $insRes = $db->prepare('INSERT INTO race_results (race_id,driver_id,qualifying_position,race_position,fastest_lap,dnf,dns,created_at) VALUES (?,?,?,?,?,?,0,CURRENT_TIMESTAMP)');
         foreach ($raceIds as $raceName=>$rid) {
             foreach ($baseResultsOrder as $r) {
-                [$code,$q,$pos,$fast,$dnf,$pts] = $r; $did = $driverIds[$code] ?? null; if (!$did) continue; $selRes->execute([$rid,$did]);
-                if (!$selRes->fetch()) { $insRes->execute([$rid,$did,$q,$pos,$fast,$dnf,$pts]); $add('RaceResults', true, "Inserted result $code for $raceName"); }
+                [$code,$q,$pos,$fast,$dnf] = $r; $did = $driverIds[$code] ?? null; if (!$did) continue; $selRes->execute([$rid,$did]);
+                if (!$selRes->fetch()) { $insRes->execute([$rid,$did,$q,$pos,$fast,$dnf]); $add('RaceResults', true, "Inserted result $code for $raceName"); }
                 else { $add('RaceResults', true, "Result $code already exists for $raceName"); }
             }
         }
 
-        // Create user lineups for each seeded race (top 3 priced drivers of that race)
+        // Create diverse user lineups for each seeded race (different strategies per user)
         $selLineup = $db->prepare('SELECT id FROM user_race_lineups WHERE user_id = ? AND race_id = ? AND championship_id = ?');
-        $insLineup = $db->prepare('INSERT INTO user_race_lineups (user_id,race_id,championship_id,drs_enabled,total_cost,total_points,submitted_at) VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP)');
+        $insLineup = $db->prepare('INSERT INTO user_race_lineups (user_id,race_id,championship_id,drs_enabled,submitted_at) VALUES (?,?,?,?,CURRENT_TIMESTAMP)');
         $insSel = $db->prepare('INSERT OR IGNORE INTO user_selected_drivers (user_race_lineup_id,race_driver_id) VALUES (?,?)');
-        $topDriversStmt = $db->prepare('SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY rd.price DESC LIMIT 3');
+        
+        // Define different selection strategies for diversity (6 drivers each as per F1 fantasy rules)
+        $strategies = [
+            'adminuser' => 'SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY rd.price DESC LIMIT 6', // top 6 expensive
+            'speedy' => 'SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY rd.price ASC LIMIT 6', // cheapest 6 picks
+            'gripmaster' => '(SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY rd.price DESC LIMIT 3) UNION (SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY RANDOM() LIMIT 3)', // 3 expensive + 3 random
+            'latebraker' => 'SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY RANDOM() LIMIT 6' // 6 completely random
+        ];
+        
         foreach ($raceIds as $raceName=>$rid) {
             foreach ($userIds as $uname=>$uid) {
                 $selLineup->execute([$uid,$rid,$championshipId]); $lid = $selLineup->fetchColumn();
                 if (!$lid) {
-                    $topDriversStmt->execute([$rid]); $rows = $topDriversStmt->fetchAll(PDO::FETCH_ASSOC);
-                    $totalCost = array_sum(array_column($rows,'price'));
-                    $totalPoints = rand(10,60); // demo points prior to scoring recalculation
-                    $insLineup->execute([$uid,$rid,$championshipId,1,$totalCost,$totalPoints]);
+                    // Use user-specific strategy
+                    if ($uname === 'gripmaster') {
+                        // Special case: 3 expensive + 3 random (separate queries)
+                        $expensiveStmt = $db->prepare('SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY rd.price DESC LIMIT 3');
+                        $randomStmt = $db->prepare('SELECT rd.id, rd.price FROM race_drivers rd WHERE rd.race_id = ? ORDER BY RANDOM() LIMIT 3');
+                        $expensiveStmt->execute([$rid]);
+                        $randomStmt->execute([$rid]);
+                        $rows = array_merge($expensiveStmt->fetchAll(PDO::FETCH_ASSOC), $randomStmt->fetchAll(PDO::FETCH_ASSOC));
+                    } else {
+                        $strategy = $strategies[$uname] ?? $strategies['latebraker'];
+                        $stmt = $db->prepare($strategy);
+                        $stmt->execute([$rid]);
+                        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+                    $insLineup->execute([$uid,$rid,$championshipId,1]);
                     $lid = $db->lastInsertId();
                     foreach ($rows as $row) { $insSel->execute([$lid,$row['id']]); }
-                    $add('Lineups', true, "Created lineup for user $uid ($raceName)");
+                    $add('Lineups', true, "Created lineup for user $uid ($raceName) - strategy: $uname");
                 } else { $add('Lineups', true, "Lineup already exists for user $uid ($raceName)"); }
             }
         }
