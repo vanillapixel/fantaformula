@@ -60,29 +60,67 @@ try {
                 $userRawSum[$uid] = ($userRawSum[$uid] ?? 0) + $pts;
             }
             usort($calc, function($a,$b){ if ($b['points']==$a['points']) return strcmp($a['submitted_at'],$b['submitted_at']); return $b['points'] <=> $a['points']; });
-            $last=null; $rank=0; $idx=0; foreach ($calc as $row) { $idx++; $val=$row['points']; if ($last===null || $val < $last){ $rank=$idx; $last=$val; } if ($rank <= count($rankingArray)) { $userChampPoints[$row['user_id']] = ($userChampPoints[$row['user_id']] ?? 0) + $rankingArray[$rank-1]; } }
+            $last=null; $rank=0; $idx=0; 
+            foreach ($calc as $row) { 
+                $idx++; $val=$row['points']; 
+                if ($last===null || $val < $last){ $rank=$idx; $last=$val; } 
+                if ($rank <= count($rankingArray)) { 
+                    $userId = (int)$row['user_id']; // Ensure integer key
+                    $userChampPoints[$userId] = ($userChampPoints[$userId] ?? 0) + $rankingArray[$rank-1]; 
+                } 
+            }
         }
     }
 
     // Ensure all participants appear even if no races
-    $partStmt = $db->prepare('SELECT user_id FROM championship_participants WHERE championship_id = ?');
+    $partStmt = $db->prepare('SELECT DISTINCT user_id FROM championship_participants WHERE championship_id = ?');
     $partStmt->execute([$championshipId]);
     foreach ($partStmt->fetchAll(PDO::FETCH_COLUMN) as $uid) {
-        $uid = (int)$uid; if (!isset($userChampPoints[$uid])) { $userChampPoints[$uid] = 0; }
-        if (!isset($userRawSum[$uid])) { $userRawSum[$uid] = 0; }
+        $uid = (int)$uid; 
+        if (!array_key_exists($uid, $userChampPoints)) { $userChampPoints[$uid] = 0; }
+        if (!array_key_exists($uid, $userRawSum)) { $userRawSum[$uid] = 0; }
     }
 
+    // Normalize all keys to integers to prevent string/int key duplicates
+    $normalizedUserChampPoints = [];
+    $normalizedUserRawSum = [];
+    foreach ($userChampPoints as $uid => $points) {
+        $normalizedUid = (int)$uid;
+        $normalizedUserChampPoints[$normalizedUid] = ($normalizedUserChampPoints[$normalizedUid] ?? 0) + $points;
+    }
+    foreach ($userRawSum as $uid => $points) {
+        $normalizedUid = (int)$uid;
+        $normalizedUserRawSum[$normalizedUid] = ($normalizedUserRawSum[$normalizedUid] ?? 0) + $points;
+    }
+    $userChampPoints = $normalizedUserChampPoints;
+    $userRawSum = $normalizedUserRawSum;
+    
     // Build final standings ordered by championship points then raw sum as tie-breaker
     $standings = [];
-    foreach ($userChampPoints as $uid=>$cpts) {
-        $uname = $db->prepare('SELECT username FROM users WHERE id = ?');
-        $uname->execute([$uid]);
-        $standings[] = [
-            'user_id' => $uid,
-            'username' => $uname->fetchColumn() ?: ('user#'.$uid),
-            'champ_points' => (float)$cpts,
-            'raw_points' => (float)$userRawSum[$uid]
-        ];
+    
+    // Get all unique user IDs and usernames in one query for efficiency
+    $userIds = array_unique(array_keys($userChampPoints)); // Ensure unique user IDs
+    if (!empty($userIds)) {
+        $placeholders = str_repeat('?,', count($userIds) - 1) . '?';
+        $userNamesStmt = $db->prepare("SELECT id, username FROM users WHERE id IN ($placeholders)");
+        $userNamesStmt->execute($userIds);
+        $userNames = [];
+        foreach ($userNamesStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $userNames[(int)$row['id']] = $row['username'];
+        }
+        
+        // Build standings ensuring no duplicates by using user_id as array key
+        $standingsMap = [];
+        foreach ($userChampPoints as $uid => $cpts) {
+            $uid = (int)$uid;
+            $standingsMap[$uid] = [
+                'user_id' => $uid,
+                'username' => $userNames[$uid] ?? ('user#'.$uid),
+                'champ_points' => (float)$cpts,
+                'raw_points' => (float)($userRawSum[$uid] ?? 0)
+            ];
+        }
+        $standings = array_values($standingsMap); // Convert back to indexed array
     }
     usort($standings, function($a,$b){
         if ($b['champ_points'] == $a['champ_points']) {
@@ -92,23 +130,24 @@ try {
         return $b['champ_points'] <=> $a['champ_points'];
     });
     $lastChamp = null; $rank = 0; $idx = 0;
-    foreach ($standings as &$s) {
-        $idx++; $cp = $s['champ_points'];
+    for ($i = 0; $i < count($standings); $i++) {
+        $idx++; $cp = $standings[$i]['champ_points'];
         if ($lastChamp === null || $cp < $lastChamp) { $rank = $idx; $lastChamp = $cp; }
-        $s['position'] = $rank;
+        $standings[$i]['position'] = $rank;
     }
 
     $userSummary = null;
     if ($userIdFilter) {
         foreach ($standings as $s) {
-            if ($s['user_id'] === $userIdFilter) {
+            if ($s['user_id'] == $userIdFilter) {  // Use == instead of === for type-flexible comparison
                 $userSummary = [
                     'user_id' => $s['user_id'],
                     'position' => $s['position'],
                     'champ_points' => $s['champ_points'],
                     'raw_points' => $s['raw_points']
                 ];
-                break; }
+                break; 
+            }
         }
         if (!$userSummary) {
             // user participates? if not found treat as zero points at bottom

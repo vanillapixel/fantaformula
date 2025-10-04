@@ -78,6 +78,13 @@ export const championshipsAPI = {
         const response = await api.post('/championships/index.php', championshipData);
         return response.data;
     },
+
+    getStats: async (championshipId, userId = null) => {
+        const params = { championship_id: championshipId };
+        if (userId) params.user_id = userId;
+        const response = await api.get('/championships/stats.php', { params });
+        return response.data;
+    },
 };
 
 // Races API functions

@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import Navigation from './components/common/Navigation';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import ChampionshipsPage from './components/championships/ChampionshipsPage';
+import LeaderboardPage from './components/championships/LeaderboardPage';
 import RacesPage from './components/races/RacesPage';
 import AdminPanel from './components/admin/AdminPanel';
 
@@ -65,6 +66,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <ChampionshipsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/championships/:championshipId/leaderboard"
+            element={
+              <ProtectedRoute>
+                <LeaderboardPage />
               </ProtectedRoute>
             }
           />

@@ -49,7 +49,7 @@ const ChampionshipCard = ({ championship, onJoin }) => {
     const isParticipating = championship.participants?.some(p => p.user_id === user?.id);
     const isAdmin = championship.admin_id === user?.id || user?.is_super_admin;
     const canJoin = championship.is_public && !isParticipating && championship.status !== 'completed';
-    const isFull = championship.current_participants >= championship.max_participants;
+    const isFull = championship.participant_count >= championship.max_participants;
 
     return (
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-gray-600 transition-colors">
@@ -80,7 +80,7 @@ const ChampionshipCard = ({ championship, onJoin }) => {
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-400">Participants:</span>
                     <span className="text-white">
-                        {championship.current_participants || 0} / {championship.max_participants}
+                        {championship.participant_count || 0} / {championship.max_participants}
                     </span>
                 </div>
 
@@ -107,14 +107,14 @@ const ChampionshipCard = ({ championship, onJoin }) => {
                 <div className="flex justify-between text-xs text-gray-400 mb-1">
                     <span>Capacity</span>
                     <span>
-                        {Math.round(((championship.current_participants || 0) / championship.max_participants) * 100)}%
+                        {Math.round(((championship.participant_count || 0) / championship.max_participants) * 100)}%
                     </span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                     <div
                         className="bg-primary h-2 rounded-full transition-all duration-300"
                         style={{
-                            width: `${Math.min(((championship.current_participants || 0) / championship.max_participants) * 100, 100)}%`
+                            width: `${Math.min(((championship.participant_count || 0) / championship.max_participants) * 100, 100)}%`
                         }}
                     />
                 </div>
@@ -134,8 +134,8 @@ const ChampionshipCard = ({ championship, onJoin }) => {
                         onClick={handleJoinChampionship}
                         disabled={loading || isFull}
                         className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${loading || isFull
-                                ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                : 'btn-primary hover:bg-red-600'
+                            ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                            : 'btn-primary hover:bg-red-600'
                             }`}
                     >
                         {loading ? 'Joining...' : isFull ? 'Full' : 'Join Championship'}

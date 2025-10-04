@@ -43,7 +43,7 @@ const ChampionshipCard = ({ champ, upcomingRace }) => {
                 <StatusBadge status={champ.status || champ.season_status} />
             </div>
             <div className="py-4 flex flex-col gap-4">
-                <Link to={`/championships/${champ.id}`} className="flex items-center justify-around bg-primary/90 hover:bg-primary text-white rounded-md py-3 transition-colors">
+                <Link to={`/championships/${champ.id}/leaderboard`} className="flex items-center justify-around bg-primary/90 hover:bg-primary text-white rounded-md py-3 transition-colors">
                     <div className="text-center">
                         <div className="text-3xl font-bold font-titillium">{champ.user_position ?? '-'}</div>
                         <div className="text-xs uppercase tracking-wide">Posizione</div>

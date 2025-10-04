@@ -27,6 +27,14 @@
             "description": "Championship management"
         },
         {
+            "name": "Teams",
+            "description": "F1 teams/constructors"
+        },
+        {
+            "name": "User Teams",
+            "description": "User fantasy teams"
+        },
+        {
             "name": "Seasons",
             "description": "Season and rules"
         },
@@ -220,6 +228,46 @@
                     "Championships"
                 ],
                 "summary": "List championships",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "upcoming",
+                                "active",
+                                "completed"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "public",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "true",
+                                "false"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "season",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Filter championships user participates in"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "List returned"
@@ -243,14 +291,24 @@
                             "schema": {
                                 "type": "object",
                                 "required": [
-                                    "name"
+                                    "name",
+                                    "season_year"
                                 ],
                                 "properties": {
                                     "name": {
                                         "type": "string"
                                     },
-                                    "description": {
-                                        "type": "string"
+                                    "season_year": {
+                                        "type": "integer"
+                                    },
+                                    "max_participants": {
+                                        "type": "integer"
+                                    },
+                                    "is_public": {
+                                        "type": "boolean"
+                                    },
+                                    "settings": {
+                                        "type": "object"
                                     }
                                 }
                             }
@@ -263,6 +321,231 @@
                     },
                     "401": {
                         "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/backend/api/championships/details.php/{id}": {
+            "get": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Get championship details",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Championship details"
+                    },
+                    "404": {
+                        "description": "Championship not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Update championship (admin only)",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    },
+                                    "max_participants": {
+                                        "type": "integer"
+                                    },
+                                    "is_public": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Updated"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Delete championship (admin only)",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deleted"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    }
+                }
+            }
+        },
+        "/backend/api/championships/participants.php": {
+            "get": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Get championship participants",
+                "parameters": [
+                    {
+                        "name": "championship_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Participants list"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Join championship",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "championship_id"
+                                ],
+                                "properties": {
+                                    "championship_id": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Joined successfully"
+                    },
+                    "400": {
+                        "description": "Already joined or championship full"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Leave championship",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "championship_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Left successfully"
+                    }
+                }
+            }
+        },
+        "/backend/api/championships/stats.php": {
+            "get": {
+                "tags": [
+                    "Championships"
+                ],
+                "summary": "Get championship standings/leaderboard",
+                "parameters": [
+                    {
+                        "name": "championship_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Include specific user summary"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Championship standings"
                     }
                 }
             }
@@ -368,29 +651,6 @@
                     }
                 ],
                 "responses": {
-                    "/backend/api/drivers/all.php": {
-                        "get": {
-                            "tags": [
-                                "Drivers"
-                            ],
-                            "summary": "List all drivers (no pagination)",
-                            "parameters": [
-                                {
-                                    "name": "race_id",
-                                    "in": "query",
-                                    "schema": {
-                                        "type": "integer"
-                                    },
-                                    "description": "Include per-race price if provided"
-                                }
-                            ],
-                            "responses": {
-                                "200": {
-                                    "description": "All drivers returned"
-                                }
-                            }
-                        }
-                    },
                     "200": {
                         "description": "Drivers returned"
                     }
@@ -452,6 +712,60 @@
                     },
                     "401": {
                         "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/backend/api/drivers/all.php": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "List all drivers (no pagination)",
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Include per-race price if provided"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "All drivers returned"
+                    }
+                }
+            }
+        },
+        "/backend/api/lineups/lineups.php": {
+            "get": {
+                "tags": [
+                    "Lineups"
+                ],
+                "summary": "Get lineups for specific race/championship",
+                "parameters": [
+                    {
+                        "name": "race_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "championship_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lineups retrieved"
                     }
                 }
             }
@@ -704,6 +1018,118 @@
                 "responses": {
                     "201": {
                         "description": "Created"
+                    }
+                }
+            }
+        },
+        "/backend/api/teams/index.php": {
+            "get": {
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "List F1 teams/constructors",
+                "responses": {
+                    "200": {
+                        "description": "Teams returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Teams"
+                ],
+                "summary": "Create team",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "full_name": {
+                                        "type": "string"
+                                    },
+                                    "color": {
+                                        "type": "string"
+                                    },
+                                    "logo_url": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Team created"
+                    }
+                }
+            }
+        },
+        "/backend/api/user_teams/index.php": {
+            "get": {
+                "tags": [
+                    "User Teams"
+                ],
+                "summary": "Get user's fantasy teams",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User teams returned"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "User Teams"
+                ],
+                "summary": "Create user fantasy team",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "championship_id"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "championship_id": {
+                                        "type": "integer"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Team created"
                     }
                 }
             }

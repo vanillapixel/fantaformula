@@ -23,6 +23,12 @@ backend/.env
 backend/.env.local
 backend/.env.production
 
+# database files
+backend/database/fantaformula.db
+*.db
+*.sqlite
+*.sqlite3
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
