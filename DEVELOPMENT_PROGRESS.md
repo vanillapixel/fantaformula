@@ -2,20 +2,35 @@
 
 ## ✅ Completed Features (Current Session)
 
-### 1. **React Router Setup**
+### 1. **Database Schema Enhancements**
+
+- ✅ **Championship Teams System**: Added team functionality within championships
+  - `championship_teams` table for admin-managed teams
+  - `championship_team_members` table for team membership
+  - Teams managed exclusively by championship administrators
+  - No captain hierarchy - simplified equal member structure
+- ✅ **Driver Selection Rules**: Added new season rules for lineup validation
+  - `min_common_drivers_count` (default: 2) - minimum shared drivers between teammates
+  - `min_different_drivers_count` (default: 2) - minimum different drivers between any two players
+- ✅ **Race Status Logic Updates**: Improved race timing logic
+  - Current races (in progress) now properly identified
+  - Upcoming races start after race completion (day after)
+  - Dashboard shows current race countdown to race end, upcoming race countdown to qualifying
+
+### 2. **React Router Setup**
 
 - ✅ Implemented React Router with protected routes
 - ✅ Created navigation structure with proper route guards
 - ✅ Added dynamic navigation based on authentication status
 
-### 2. **Navigation Component**
+### 3. **Navigation Component**
 
 - ✅ Created responsive navigation header
 - ✅ Added role-based menu items (admin panel for super admins)
 - ✅ Implemented active route highlighting
 - ✅ User profile display with logout functionality
 
-### 3. **Championships Management (Complete)**
+### 4. **Championships Management (Complete)**
 
 - ✅ **ChampionshipsPage**: Main championship listing with search
 - ✅ **ChampionshipsList**: Grid display of all championships
@@ -29,7 +44,7 @@
 - ✅ **useChampionships**: Custom hook for championship data management
 - ✅ Integration with backend API
 
-### 4. **Race Calendar (Complete)**
+### 5. **Race Calendar (Complete)**
 
 - ✅ **RacesPage**: Race calendar with season selector
 - ✅ **RaceCard**: Detailed race cards with:
@@ -40,7 +55,7 @@
   - Team selection deadline warnings
 - ✅ Integration with races API
 
-### 5. **Admin Panel (Basic Structure)**
+### 6. **Admin Panel (Basic Structure)**
 
 - ✅ **AdminPanel**: Admin dashboard with:
   - Access control for super admins only
@@ -49,7 +64,7 @@
   - Development notices
 - ✅ Protected admin routes
 
-### 6. **Common Components & Utilities**
+### 7. **Common Components & Utilities**
 
 - ✅ **LoadingSpinner**: Reusable loading component
 - ✅ **Modal**: Base modal component
@@ -61,7 +76,7 @@
   - Form validation
   - Progress calculations
 
-### 7. **Application Architecture**
+### 8. **Application Architecture**
 
 - ✅ Proper component structure and organization
 - ✅ Custom hooks for data management
@@ -85,6 +100,8 @@
 - `GET /teams/index.php` - Get user's team selection
 - `POST /teams/index.php` - Save team selection
 - `GET /results/index.php` - Get race results
+- **Championship Teams API** - CRUD operations for team management
+- **Driver Selection Validation** - Enforce min_common_drivers_count and min_different_drivers_count rules
 
 ## 📱 User Interface Status
 
@@ -107,24 +124,42 @@
 
 ## 🚀 Next Development Priorities
 
-### 1. **Team Selection Interface** (Next Priority)
+### 1. **Championship Team Management UI** (Next Priority)
+
+- **Team Management Dashboard** for championship admins
+- Create, edit, delete teams within championships
+- Player assignment interface (drag & drop or selection)
+- Team overview with member lists and statistics
+- Bulk operations for player assignments
+
+### 2. **Driver Selection Validation** (High Priority)
+
+- Implement validation rules in lineup creation
+- Enforce `min_common_drivers_count` for teammates
+- Enforce `min_different_drivers_count` between all players
+- Real-time validation feedback during lineup creation
+
+### 3. **Team Selection Interface**
 
 - Create team selection page for each race
 - Driver picker with budget constraints
 - Save/load team configurations
 - Budget calculator and validation
+- **Team-aware lineup creation** (integrate with championship teams)
 
-### 2. **Results & Leaderboards**
+### 4. **Results & Leaderboards**
 
 - Race results display
-- Championship standings
+- Championship standings (individual and team-based)
 - Points calculation and breakdown
+- **Team standings and competition**
 - Admin results submission
 
-### 3. **Backend Enhancements**
+### 5. **Backend API Enhancements**
 
+- Championship teams CRUD endpoints
 - Join championship endpoint
-- Team selection endpoints
+- Team selection endpoints with validation
 - Results submission system
 - User management APIs
 

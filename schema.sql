@@ -45,6 +45,8 @@ CREATE TABLE season_rules (
     drs_cap_value DECIMAL(6,2) DEFAULT 30.0,
     max_drivers_count INTEGER DEFAULT 6,
     user_position_points TEXT DEFAULT '[25,18,14,10,6,3,1]', -- JSON array
+    min_common_drivers_count INTEGER DEFAULT 2, -- minimum drivers teammates must share
+    min_different_drivers_count INTEGER DEFAULT 2, -- minimum different drivers between any two players
     FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
     UNIQUE(season_id)
 );
@@ -137,6 +139,31 @@ CREATE TABLE championship_participants (
     UNIQUE(championship_id, user_id)
 );
 
+-- Championship teams (teams within championships)
+CREATE TABLE championship_teams (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    championship_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    max_members INTEGER DEFAULT NULL, -- NULL = no limit
+    created_by INTEGER NOT NULL, -- user who created the team
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (championship_id) REFERENCES championships(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(championship_id, name) -- team names must be unique within championship
+);
+
+-- Championship team members
+CREATE TABLE championship_team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES championship_teams(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(team_id, user_id) -- user can't be in same team twice
+);
+
 -- =====================================================
 -- RESULTS & PERFORMANCE TABLES
 -- =====================================================
@@ -167,11 +194,13 @@ CREATE TABLE user_race_lineups (
     user_id INTEGER NOT NULL,
     race_id INTEGER NOT NULL,
     championship_id INTEGER NOT NULL,
+    team_id INTEGER NULL, -- optional team association
     drs_enabled BOOLEAN DEFAULT 1,
     submitted_at DATETIME,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE,
     FOREIGN KEY (championship_id) REFERENCES championships(id) ON DELETE CASCADE,
+    FOREIGN KEY (team_id) REFERENCES championship_teams(id) ON DELETE SET NULL,
     UNIQUE(user_id, race_id, championship_id)
 );
 
@@ -199,6 +228,12 @@ CREATE INDEX idx_championships_status ON championships(status);
 CREATE INDEX idx_championship_participants_championship ON championship_participants(championship_id);
 CREATE INDEX idx_championship_participants_user ON championship_participants(user_id);
 
+-- Championship team indexes
+CREATE INDEX idx_teams_championship ON championship_teams(championship_id);
+CREATE INDEX idx_teams_creator ON championship_teams(created_by);
+CREATE INDEX idx_team_members_team ON championship_team_members(team_id);
+CREATE INDEX idx_team_members_user ON championship_team_members(user_id);
+
 -- Race indexes
 CREATE INDEX idx_races_season ON races(season_id);
 CREATE INDEX idx_races_date ON races(race_date);
@@ -210,10 +245,11 @@ CREATE INDEX idx_race_results_race ON race_results(race_id);
 CREATE INDEX idx_race_results_driver ON race_results(driver_id);
 
 -- Fantasy lineup indexes
-CREATE INDEX idx_user_race_lineups_user ON user_race_lineups(user_id);
-CREATE INDEX idx_user_race_lineups_race ON user_race_lineups(race_id);
-CREATE INDEX idx_user_race_lineups_championship ON user_race_lineups(championship_id);
-CREATE INDEX idx_user_selected_drivers_lineup ON user_selected_drivers(user_race_lineup_id);
+CREATE INDEX idx_lineups_user ON user_race_lineups(user_id);
+CREATE INDEX idx_lineups_race ON user_race_lineups(race_id);
+CREATE INDEX idx_lineups_championship ON user_race_lineups(championship_id);
+CREATE INDEX idx_lineups_team ON user_race_lineups(team_id);
+CREATE INDEX idx_selected_drivers_lineup ON user_selected_drivers(user_race_lineup_id);
 
 -- =====================================================
 -- SAMPLE DATA FOR TESTING

@@ -32,7 +32,18 @@ const StatusBadge = ({ status }) => {
 };
 
 const ChampionshipCard = ({ champ, upcomingRace }) => {
-    const target = upcomingRace ? new Date(upcomingRace.qualifying_date.replace(' ', 'T')).getTime() : null;
+    // Determine if this is a current race (in progress) or upcoming race
+    const now = new Date();
+    const isCurrentRace = upcomingRace &&
+        now >= new Date(upcomingRace.qualifying_date.replace(' ', 'T')) &&
+        now < new Date(upcomingRace.race_date.replace(' ', 'T'));
+
+    // For current race, countdown to race end. For upcoming race, countdown to qualifying start.
+    const target = upcomingRace ?
+        (isCurrentRace ?
+            new Date(upcomingRace.race_date.replace(' ', 'T')).getTime() :
+            new Date(upcomingRace.qualifying_date.replace(' ', 'T')).getTime()
+        ) : null;
     const { d, h, m, s } = useCountdown(target);
     return (
         <div className="rounded-lg overflow-hidden shadow flex flex-col">
@@ -57,8 +68,13 @@ const ChampionshipCard = ({ champ, upcomingRace }) => {
                 {upcomingRace ? (
                     <div className="bg-black text-white rounded-md p-4 flex flex-col gap-2">
                         <div className="flex items-center justify-between text-xs text-gray-300">
-                            <span>Prossima gara</span>
-                            <span>{new Date(upcomingRace.qualifying_date.replace(' ', 'T')).toLocaleDateString()}</span>
+                            <span>{isCurrentRace ? 'Gara in corso' : 'Prossima gara'}</span>
+                            <span>
+                                {isCurrentRace ?
+                                    new Date(upcomingRace.race_date.replace(' ', 'T')).toLocaleDateString() :
+                                    new Date(upcomingRace.qualifying_date.replace(' ', 'T')).toLocaleDateString()
+                                }
+                            </span>
                         </div>
                         <div className="text-center font-bold text-sm text-white uppercase leading-tight">{upcomingRace.name}</div>
                         <div className="mt-1 grid grid-cols-4 gap-2 text-center font-mono">
@@ -112,12 +128,25 @@ const Dashboard = () => {
 
     const upcomingRacePerChamp = useMemo(() => {
         if (!races.length) return {};
-        const now = Date.now();
-        const next = races.filter(r => new Date(r.qualifying_date.replace(' ', 'T')).getTime() > now)
-            .sort((a, b) => new Date(a.qualifying_date) - new Date(b.qualifying_date))[0];
-        // same upcoming race for all championships for now (season wide)
+        const now = new Date();
+
+        // Find current race (in progress between qualifying and race date)
+        const currentRace = races.find(r => {
+            const qualDate = new Date(r.qualifying_date.replace(' ', 'T'));
+            const raceDate = new Date(r.race_date.replace(' ', 'T'));
+            return now >= qualDate && now < raceDate;
+        });
+
+        // If there's a current race in progress, use it. Otherwise find next upcoming race.
+        const targetRace = currentRace || races.filter(r => {
+            const raceDate = new Date(r.race_date.replace(' ', 'T'));
+            // Race should start after today (day after completion)
+            return raceDate.toDateString() > now.toDateString();
+        }).sort((a, b) => new Date(a.race_date) - new Date(b.race_date))[0];
+
+        // same upcoming/current race for all championships for now (season wide)
         const map = {};
-        championships.forEach(c => { map[c.id] = next; });
+        championships.forEach(c => { map[c.id] = targetRace; });
         return map;
     }, [races, championships]);
 

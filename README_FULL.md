@@ -68,9 +68,20 @@ docker-compose up -d
 
 ### Fantasy System
 
-- **User Teams**: Driver selections per race
+- **User Teams**: Driver selections per race with team association
+- **Championship Teams**: Admin-managed teams within championships for team-based competition
 - **Scoring Rules**: Flexible point system per season
 - **Budget System**: ~250 budget per race (configurable)
+- **Driver Selection Rules**:
+  - Configurable teammate collaboration (min shared drivers)
+  - Configurable player diversity (min different drivers between players)
+
+### Recent Enhancements (October 2025)
+
+- **✅ Championship Teams**: Teams within championships managed by admins
+- **✅ Driver Selection Rules**: Teammate collaboration and player diversity validation
+- **✅ Enhanced Race Logic**: Current race detection and improved upcoming race timing
+- **✅ Database Schema**: Updated to 15 tables with team and rule support
 
 See `db_structure_plan.md` for complete schema documentation.
 

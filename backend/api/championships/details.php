@@ -64,11 +64,25 @@ try {
             $stmt->execute([$championshipId]);
             $admins = $stmt->fetchAll();
             
-            // Get upcoming races for this season
+            // Get current and upcoming races for this season
+            // Current race: race in progress (between qualifying and race date)
             $stmt = $db->prepare("
                 SELECT id, name, track_name, country, race_date, qualifying_date, round_number
                 FROM races
-                WHERE season_id = ? AND race_date > CURRENT_TIMESTAMP
+                WHERE season_id = ? 
+                AND qualifying_date <= CURRENT_TIMESTAMP 
+                AND race_date > CURRENT_TIMESTAMP
+                ORDER BY race_date ASC
+                LIMIT 1
+            ");
+            $stmt->execute([$championship['season_id']]);
+            $currentRace = $stmt->fetch();
+            
+            // Upcoming races: races that start after today (day after race completion)
+            $stmt = $db->prepare("
+                SELECT id, name, track_name, country, race_date, qualifying_date, round_number
+                FROM races
+                WHERE season_id = ? AND DATE(race_date) > DATE(CURRENT_TIMESTAMP)
                 ORDER BY race_date ASC
                 LIMIT 5
             ");
@@ -84,6 +98,7 @@ try {
             $championship['settings'] = $championship['settings'] ? json_decode($championship['settings'], true) : null;
             $championship['participants'] = $participants;
             $championship['admins'] = $admins;
+            $championship['current_race'] = $currentRace;
             $championship['upcoming_races'] = $upcomingRaces;
             $championship['participant_count'] = count($participants);
             

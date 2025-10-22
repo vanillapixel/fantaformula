@@ -36,7 +36,7 @@ fantaformula/
 
 ### Backend Foundation
 
-- **Database**: SQLite schema with 13 tables
+- **Database**: SQLite schema with 15 tables (including championship teams)
 - **Authentication**: JWT-based auth system
 - **API Structure**: RESTful endpoints with CORS support
 - **Error Handling**: Standardized JSON responses
@@ -93,25 +93,39 @@ npx create-react-app . --template typescript
 # Setup API services and components
 ```
 
-## 🎯 Next Development Steps
+## 🎯 Development Status & Next Steps
 
-### Phase 1: Core API Endpoints
+### ✅ Recently Completed (October 2025)
 
-- [ ] Championships CRUD (`/backend/api/championships/`)
-- [ ] Races & Drivers (`/backend/api/races/`)
-- [ ] Team Management (`/backend/api/teams/`)
+- **✅ Database Schema Enhanced**: Updated to 15 tables with championship teams support
+- **✅ Championship Teams System**: Admin-managed teams within championships
+- **✅ Driver Selection Rules**: Configurable teammate collaboration and player diversity
+- **✅ Enhanced Race Logic**: Current vs upcoming race detection with proper timing
+- **✅ Migration System**: Applied database migrations for all new features
 
-### Phase 2: React Frontend
+### Phase 1: Championship Teams API (Next Priority)
 
-- [ ] Authentication components
-- [ ] Dashboard & championship management
-- [ ] Team selection interface
+- [ ] Championship teams CRUD endpoints (`/backend/api/championships/{id}/teams/`)
+- [ ] Team member management (`/backend/api/teams/{id}/members/`)
+- [ ] Team assignment and validation APIs
 
-### Phase 3: Advanced Features
+### Phase 2: Enhanced Lineup Validation
 
-- [ ] Real-time polling
-- [ ] Scoring calculations
-- [ ] Admin features
+- [ ] Driver selection validation with new rules
+- [ ] Real-time validation during lineup creation
+- [ ] Team-aware lineup constraints
+
+### Phase 3: Frontend Team Management
+
+- [ ] Championship admin team management UI
+- [ ] Player assignment interfaces
+- [ ] Team-based leaderboards and statistics
+
+### Phase 4: Advanced Features
+
+- [ ] Real-time polling with team updates
+- [ ] Team-based scoring calculations
+- [ ] Enhanced admin features for team management
 
 ## 🛠️ Development Tips
 

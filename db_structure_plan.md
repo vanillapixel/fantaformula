@@ -22,7 +22,7 @@ When scaling beyond beta, migrate to:
 
 ---
 
-## Database Schema (13 Tables)
+## Database Schema (15 Tables)
 
 ### Core Tables
 
@@ -66,6 +66,8 @@ _Flexible rules system allowing different seasons to have different scoring and 
 - drs_cap_value (DECIMAL(6,2) DEFAULT 30.0)
 - max_drivers_count (INTEGER DEFAULT 6)
 - user_position_points (JSON DEFAULT '[25,18,14,10,6,3,1]') -- F1-style points
+- min_common_drivers_count (INTEGER DEFAULT 2) -- minimum drivers teammates must share
+- min_different_drivers_count (INTEGER DEFAULT 2) -- minimum different drivers between any two players
 - UNIQUE(season_id)
 ```
 
@@ -168,9 +170,36 @@ _Users participating in championships_
 - UNIQUE(championship_id, user_id)
 ```
 
+#### 11. **championship_teams**
+
+_Teams within championships (managed by admins)_
+
+```sql
+- id (INTEGER PRIMARY KEY)
+- championship_id (INTEGER REFERENCES championships(id))
+- name (TEXT NOT NULL)
+- description (TEXT)
+- max_members (INTEGER DEFAULT NULL) -- NULL = no limit
+- created_by (INTEGER REFERENCES users(id)) -- admin who created the team
+- created_at (DATETIME DEFAULT CURRENT_TIMESTAMP)
+- UNIQUE(championship_id, name) -- team names unique within championship
+```
+
+#### 12. **championship_team_members**
+
+_Team membership tracking_
+
+```sql
+- id (INTEGER PRIMARY KEY)
+- team_id (INTEGER REFERENCES championship_teams(id))
+- user_id (INTEGER REFERENCES users(id))
+- joined_at (DATETIME DEFAULT CURRENT_TIMESTAMP)
+- UNIQUE(team_id, user_id) -- user can't join same team twice
+```
+
 ### Results & Performance Tables
 
-#### 11. **race_results**
+#### 13. **race_results**
 
 _Actual F1 race results for points calculation_
 
@@ -189,7 +218,7 @@ _Actual F1 race results for points calculation_
 
 ### Fantasy Lineup Tables
 
-#### 12. **user_race_lineups**
+#### 14. **user_race_lineups**
 
 _User's fantasy lineup setup for each race (renamed from user_race_teams)_
 
@@ -198,12 +227,13 @@ _User's fantasy lineup setup for each race (renamed from user_race_teams)_
 - user_id (INTEGER REFERENCES users(id))
 - race_id (INTEGER REFERENCES races(id))
 - championship_id (INTEGER REFERENCES championships(id))
+- team_id (INTEGER REFERENCES championship_teams(id)) -- optional team association
 - drs_enabled (BOOLEAN DEFAULT true)
 - submitted_at (DATETIME)
 - UNIQUE(user_id, race_id, championship_id)
 ```
 
-#### 13. **user_selected_drivers**
+#### 15. **user_selected_drivers**
 
 _Individual driver selections for each user's race lineup_
 
@@ -249,3 +279,26 @@ Structure supports frontend polling for:
 ### Migration Ready
 
 Clean relational structure easily converts to PostgreSQL/MySQL when scaling.
+
+---
+
+## Recent Updates (October 2025)
+
+### ✅ Championship Teams System
+
+- **Admin-Managed Teams**: Championship administrators can create and manage teams
+- **Simplified Structure**: No team captains - all members are equal
+- **Flexible Membership**: Optional member limits per team
+- **Team-Based Lineups**: Lineups can be associated with teams for team competitions
+
+### ✅ Driver Selection Rules
+
+- **Teammate Collaboration**: `min_common_drivers_count` ensures teammates share a minimum number of drivers
+- **Player Diversity**: `min_different_drivers_count` ensures sufficient variety between all players
+- **Configurable Rules**: Both rules are configurable per season with sensible defaults
+
+### ✅ Enhanced Race Status Logic
+
+- **Current Race Support**: Races in progress (between qualifying and race date) are properly identified
+- **Smart Upcoming Logic**: Upcoming races start after the current race is completed
+- **Dashboard Integration**: Real-time countdown shows appropriate target (race end vs. qualifying start)

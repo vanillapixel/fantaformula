@@ -5,9 +5,12 @@
 ### ✅ Backend (PHP 8.3 + SQLite)
 
 - **Container**: Running on port 8765
-- **Database**: SQLite with complete schema (users, championships, races, drivers, constructors, lineups, results)
+- **Database**: SQLite with complete schema (15 tables including championship teams)
 - **Authentication**: JWT with super admin roles (`is_super_admin` column)
 - **API Endpoints**: Complete REST API with OpenAPI docs
+- **Championship Teams**: Admin-managed teams within championships
+- **Driver Selection Rules**: Configurable teammate collaboration and player diversity rules
+- **Enhanced Race Logic**: Current vs. upcoming race detection with proper timing
 - **Documentation**: Available at http://localhost:8765/backend/api/docs/
 
 ### ✅ Frontend (React 19 + Tailwind CSS)
@@ -20,7 +23,59 @@
 
 ## Next Development Priorities
 
-### 1. Championships Management Page
+### 1. Championship Teams Management (NEW PRIORITY)
+
+**Purpose**: Allow championship admins to create and manage teams within championships
+
+**Database Ready**: ✅ `championship_teams` and `championship_team_members` tables implemented
+
+**API Endpoints Needed**:
+
+```javascript
+// Championship team management (admin only)
+teamsAPI.getAll(championshipId); // GET /championships/{id}/teams
+teamsAPI.create(championshipId, data); // POST /championships/{id}/teams
+teamsAPI.update(teamId, data); // PUT /teams/{id}
+teamsAPI.delete(teamId); // DELETE /teams/{id}
+teamsAPI.addMember(teamId, userId); // POST /teams/{id}/members
+teamsAPI.removeMember(teamId, userId); // DELETE /teams/{id}/members/{userId}
+```
+
+**Components Needed**:
+
+```jsx
+src/components/championships/teams/
+├── TeamManagementPage.js          // Main team management dashboard
+├── TeamsList.js                   // List all teams in championship
+├── TeamCard.js                    // Individual team display
+├── CreateTeamModal.js             // Create new team modal
+├── EditTeamModal.js               // Edit team details
+├── PlayerAssignmentModal.js       // Assign players to teams
+└── TeamMembersTable.js           // Team member management
+```
+
+**Features to Implement**:
+
+- Championship admin dashboard for team management
+- Create, edit, delete teams within championships
+- Assign/remove players to/from teams
+- Set team member limits (optional)
+- Bulk player assignment operations
+- Team overview with statistics
+
+### 2. Driver Selection Validation (NEW FEATURE)
+
+**Purpose**: Enforce team collaboration and player diversity rules during lineup creation
+
+**Database Ready**: ✅ `min_common_drivers_count` and `min_different_drivers_count` in season_rules
+
+**Validation Rules**:
+
+- **Teammate Collaboration**: Team members must share at least N drivers (default: 2)
+- **Player Diversity**: Any two players must have at least N different drivers (default: 2)
+- **Real-time Validation**: Check rules as users build their lineups
+
+### 3. Championships Management Page
 
 **Purpose**: List, join, create championships
 
@@ -50,7 +105,7 @@ src/components/championships/
 - Search and filter championships
 - Show participant count and admin info
 
-### 2. Race Calendar & Lineup Selection
+### 4. Race Calendar & Lineup Selection
 
 **Purpose**: View races, select a driver lineup within budget
 
@@ -81,13 +136,16 @@ src/components/lineupSelection/
 
 **Features to Implement**:
 
-- Race calendar with status indicators (upcoming/qualifying/completed)
+- **Enhanced Race Status Logic**: ✅ Current races (in progress) and upcoming races properly identified
+- Race calendar with status indicators (upcoming/qualifying/ongoing/completed)
+- **Team-aware lineup creation**: Integrate with championship teams system
 - Driver selection with pricing and constructor affiliations
 - Budget constraints and validation
-- Save/update lineup selections
-- Visual feedback for lineup composition
+- **Driver selection validation**: Enforce min_common_drivers_count and min_different_drivers_count rules
+- Save/update lineup selections with team association
+- Visual feedback for lineup composition and rule compliance
 
-### 3. Results & Leaderboards
+### 5. Results & Leaderboards
 
 **Purpose**: View race results and championship standings
 
