@@ -35,14 +35,14 @@ const ChampionshipCard = ({ champ, upcomingRace }) => {
     // Determine if this is a current race (in progress) or upcoming race
     const now = new Date();
     const isCurrentRace = upcomingRace &&
-        now >= new Date(upcomingRace.qualifying_date.replace(' ', 'T')) &&
-        now < new Date(upcomingRace.race_date.replace(' ', 'T'));
+        now >= new Date(upcomingRace.qualifying_date + 'Z') &&
+        now < new Date(upcomingRace.race_date + 'Z');
 
     // For current race, countdown to race end. For upcoming race, countdown to qualifying start.
     const target = upcomingRace ?
         (isCurrentRace ?
-            new Date(upcomingRace.race_date.replace(' ', 'T')).getTime() :
-            new Date(upcomingRace.qualifying_date.replace(' ', 'T')).getTime()
+            new Date(upcomingRace.race_date + 'Z').getTime() :
+            new Date(upcomingRace.qualifying_date + 'Z').getTime()
         ) : null;
     const { d, h, m, s } = useCountdown(target);
     return (
@@ -71,8 +71,8 @@ const ChampionshipCard = ({ champ, upcomingRace }) => {
                             <span>{isCurrentRace ? 'Gara in corso' : 'Prossima gara'}</span>
                             <span>
                                 {isCurrentRace ?
-                                    new Date(upcomingRace.race_date.replace(' ', 'T')).toLocaleDateString() :
-                                    new Date(upcomingRace.qualifying_date.replace(' ', 'T')).toLocaleDateString()
+                                    new Date(upcomingRace.race_date + 'Z').toLocaleDateString() :
+                                    new Date(upcomingRace.qualifying_date + 'Z').toLocaleDateString()
                                 }
                             </span>
                         </div>
@@ -132,17 +132,18 @@ const Dashboard = () => {
 
         // Find current race (in progress between qualifying and race date)
         const currentRace = races.find(r => {
-            const qualDate = new Date(r.qualifying_date.replace(' ', 'T'));
-            const raceDate = new Date(r.race_date.replace(' ', 'T'));
+            // Parse dates as UTC to match database format
+            const qualDate = new Date(r.qualifying_date + 'Z');
+            const raceDate = new Date(r.race_date + 'Z');
             return now >= qualDate && now < raceDate;
         });
 
         // If there's a current race in progress, use it. Otherwise find next upcoming race.
         const targetRace = currentRace || races.filter(r => {
-            const raceDate = new Date(r.race_date.replace(' ', 'T'));
-            // Race should start after today (day after completion)
-            return raceDate.toDateString() > now.toDateString();
-        }).sort((a, b) => new Date(a.race_date) - new Date(b.race_date))[0];
+            // Parse date as UTC and compare timestamps
+            const raceDate = new Date(r.race_date + 'Z');
+            return raceDate.getTime() > now.getTime();
+        }).sort((a, b) => new Date(a.race_date + 'Z') - new Date(b.race_date + 'Z'))[0];
 
         // same upcoming/current race for all championships for now (season wide)
         const map = {};
