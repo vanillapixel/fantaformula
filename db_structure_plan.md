@@ -68,6 +68,11 @@ _Flexible rules system allowing different seasons to have different scoring and 
 - user_position_points (JSON DEFAULT '[25,18,14,10,6,3,1]') -- F1-style points
 - min_common_drivers_count (INTEGER DEFAULT 2) -- minimum drivers teammates must share
 - min_different_drivers_count (INTEGER DEFAULT 2) -- minimum different drivers between any two players
+- fastest_lap_prediction_enabled (BOOLEAN DEFAULT 1) -- enable fastest lap predictions
+- gp_winner_prediction_enabled (BOOLEAN DEFAULT 1) -- enable GP winner predictions
+- dnf_driver_prediction_enabled (BOOLEAN DEFAULT 1) -- enable DNF driver predictions
+- dnf_driver_points (DECIMAL(4,2) DEFAULT 10.0) -- points for correctly predicting DNF driver
+- dnf_driver_in_lineup_multiplier (DECIMAL(4,2) DEFAULT 2.0) -- multiplier if DNF driver is in lineup
 - UNIQUE(season_id)
 ```
 
@@ -302,3 +307,13 @@ Clean relational structure easily converts to PostgreSQL/MySQL when scaling.
 - **Current Race Support**: Races in progress (between qualifying and race date) are properly identified
 - **Smart Upcoming Logic**: Upcoming races start after the current race is completed
 - **Dashboard Integration**: Real-time countdown shows appropriate target (race end vs. qualifying start)
+
+### ✅ Prediction System (October 23, 2025)
+
+- **Fastest Lap Predictions**: `fastest_lap_prediction_enabled` - Users can predict fastest lap driver
+- **GP Winner Predictions**: `gp_winner_prediction_enabled` - Users can predict race winner
+- **DNF Driver Predictions**: `dnf_driver_prediction_enabled` - Users can predict which drivers will DNF
+- **DNF Scoring System**: 
+  - `dnf_driver_points` (default: 10.0) - Points awarded for correct DNF prediction
+  - `dnf_driver_in_lineup_multiplier` (default: 2.0) - Multiplier when predicted DNF driver is in user's lineup
+- **Configurable Features**: All prediction features can be enabled/disabled per season

@@ -47,6 +47,11 @@ CREATE TABLE season_rules (
     user_position_points TEXT DEFAULT '[25,18,14,10,6,3,1]', -- JSON array
     min_common_drivers_count INTEGER DEFAULT 2, -- minimum drivers teammates must share
     min_different_drivers_count INTEGER DEFAULT 2, -- minimum different drivers between any two players
+    fastest_lap_prediction_enabled BOOLEAN DEFAULT 1, -- enable fastest lap predictions
+    gp_winner_prediction_enabled BOOLEAN DEFAULT 1, -- enable GP winner predictions
+    dnf_driver_prediction_enabled BOOLEAN DEFAULT 1, -- enable DNF driver predictions
+    dnf_driver_points DECIMAL(4,2) DEFAULT 10.0, -- points for correctly predicting DNF driver
+    dnf_driver_in_lineup_multiplier DECIMAL(4,2) DEFAULT 2.0, -- multiplier if DNF driver is in lineup
     FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE,
     UNIQUE(season_id)
 );

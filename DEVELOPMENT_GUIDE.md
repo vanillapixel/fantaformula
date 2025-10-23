@@ -75,7 +75,46 @@ src/components/championships/teams/
 - **Player Diversity**: Any two players must have at least N different drivers (default: 2)
 - **Real-time Validation**: Check rules as users build their lineups
 
-### 3. Championships Management Page
+### 3. Prediction System (NEW FEATURE - October 23, 2025)
+
+**Purpose**: Allow users to make predictions for additional scoring opportunities
+
+**Database Ready**: ✅ All prediction rules added to `season_rules` table
+
+**Prediction Features**:
+
+- **Fastest Lap Prediction**: Users predict which driver will achieve fastest lap
+- **GP Winner Prediction**: Users predict race winner
+- **DNF Driver Prediction**: Users predict which drivers will DNF (Did Not Finish)
+
+**Scoring System**:
+
+- **DNF Prediction Points**: 10.0 points (configurable) for correct DNF prediction
+- **DNF Lineup Multiplier**: 2.0x multiplier if predicted DNF driver is also in user's lineup
+- **Enable/Disable**: All prediction features can be toggled per season
+
+**API Endpoints Needed**:
+
+```javascript
+// Prediction management
+predictionsAPI.submit(raceId, predictions); // POST /predictions/index.php
+predictionsAPI.get(raceId, userId); // GET /predictions/index.php
+predictionsAPI.getResults(raceId); // GET /predictions/results.php
+```
+
+**Components Needed**:
+
+```jsx
+src/components/predictions/
+├── PredictionsPage.js             // Main predictions interface
+├── FastestLapPrediction.js        // Fastest lap selector
+├── GPWinnerPrediction.js          // GP winner selector
+├── DNFDriverPrediction.js         // DNF driver selector
+├── PredictionSummary.js           // User's current predictions
+└── PredictionResults.js           // Results and scoring
+```
+
+### 4. Championships Management Page
 
 **Purpose**: List, join, create championships
 
@@ -105,7 +144,7 @@ src/components/championships/
 - Search and filter championships
 - Show participant count and admin info
 
-### 4. Race Calendar & Lineup Selection
+### 5. Race Calendar & Lineup Selection
 
 **Purpose**: View races, select a driver lineup within budget
 
@@ -145,7 +184,7 @@ src/components/lineupSelection/
 - Save/update lineup selections with team association
 - Visual feedback for lineup composition and rule compliance
 
-### 5. Results & Leaderboards
+### 6. Results & Leaderboards
 
 **Purpose**: View race results and championship standings
 

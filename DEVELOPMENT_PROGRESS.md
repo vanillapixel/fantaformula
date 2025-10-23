@@ -16,6 +16,12 @@
   - Current races (in progress) now properly identified
   - Upcoming races start after race completion (day after)
   - Dashboard shows current race countdown to race end, upcoming race countdown to qualifying
+- ✅ **Prediction System (October 23, 2025)**: Added comprehensive prediction features
+  - `fastest_lap_prediction_enabled` - Enable/disable fastest lap predictions
+  - `gp_winner_prediction_enabled` - Enable/disable GP winner predictions
+  - `dnf_driver_prediction_enabled` - Enable/disable DNF driver predictions
+  - `dnf_driver_points` (default: 10.0) - Points for correct DNF predictions
+  - `dnf_driver_in_lineup_multiplier` (default: 2.0) - Bonus multiplier for DNF drivers in lineup
 
 ### 2. **React Router Setup**
 
@@ -102,6 +108,8 @@
 - `GET /results/index.php` - Get race results
 - **Championship Teams API** - CRUD operations for team management
 - **Driver Selection Validation** - Enforce min_common_drivers_count and min_different_drivers_count rules
+- **Prediction System API** - Endpoints for fastest lap, GP winner, and DNF driver predictions
+- **Prediction Scoring** - Calculate points for correct predictions with multipliers
 
 ## 📱 User Interface Status
 

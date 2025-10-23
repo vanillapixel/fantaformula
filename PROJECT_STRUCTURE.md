@@ -101,6 +101,7 @@ npx create-react-app . --template typescript
 - **✅ Championship Teams System**: Admin-managed teams within championships
 - **✅ Driver Selection Rules**: Configurable teammate collaboration and player diversity
 - **✅ Enhanced Race Logic**: Current vs upcoming race detection with proper timing
+- **✅ Prediction System (Oct 23)**: Added fastest lap, GP winner, and DNF driver predictions
 - **✅ Migration System**: Applied database migrations for all new features
 
 ### Phase 1: Championship Teams API (Next Priority)
@@ -109,19 +110,25 @@ npx create-react-app . --template typescript
 - [ ] Team member management (`/backend/api/teams/{id}/members/`)
 - [ ] Team assignment and validation APIs
 
-### Phase 2: Enhanced Lineup Validation
+### Phase 2: Prediction System API
+
+- [ ] Prediction submission endpoints (`/backend/api/predictions/`)
+- [ ] Prediction results and scoring calculations
+- [ ] Season-based prediction rule configuration
+
+### Phase 3: Enhanced Lineup Validation
 
 - [ ] Driver selection validation with new rules
 - [ ] Real-time validation during lineup creation
 - [ ] Team-aware lineup constraints
 
-### Phase 3: Frontend Team Management
+### Phase 4: Frontend Team Management
 
 - [ ] Championship admin team management UI
 - [ ] Player assignment interfaces
 - [ ] Team-based leaderboards and statistics
 
-### Phase 4: Advanced Features
+### Phase 5: Advanced Features
 
 - [ ] Real-time polling with team updates
 - [ ] Team-based scoring calculations

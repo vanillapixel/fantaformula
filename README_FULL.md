@@ -75,13 +75,18 @@ docker-compose up -d
 - **Driver Selection Rules**:
   - Configurable teammate collaboration (min shared drivers)
   - Configurable player diversity (min different drivers between players)
+- **Prediction System**: 
+  - Fastest lap, GP winner, and DNF driver predictions
+  - Configurable scoring with bonus multipliers
+  - Enable/disable predictions per season
 
 ### Recent Enhancements (October 2025)
 
 - **✅ Championship Teams**: Teams within championships managed by admins
 - **✅ Driver Selection Rules**: Teammate collaboration and player diversity validation
 - **✅ Enhanced Race Logic**: Current race detection and improved upcoming race timing
-- **✅ Database Schema**: Updated to 15 tables with team and rule support
+- **✅ Prediction System (Oct 23)**: Comprehensive prediction features with configurable scoring
+- **✅ Database Schema**: Updated to 15 tables with team, rule, and prediction support
 
 See `db_structure_plan.md` for complete schema documentation.
 
