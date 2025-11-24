@@ -212,7 +212,7 @@ _Actual F1 race results for points calculation_
 - id (INTEGER PRIMARY KEY)
 - race_id (INTEGER REFERENCES races(id))
 - driver_id (INTEGER REFERENCES drivers(id))
-- qualifying_position (INTEGER)
+- starting_position (INTEGER)
 - race_position (INTEGER)
 - fastest_lap (BOOLEAN DEFAULT false)
 - dnf (BOOLEAN DEFAULT false) -- Did Not Finish

@@ -66,7 +66,7 @@ try {
                     rd.id as race_driver_id,
                     rd.price,
                     rd.created_at,
-                    rr.qualifying_position,
+                    rr.starting_position,
                     rr.race_position,
                     rr.fastest_lap,
                     rr.dnf,
@@ -88,7 +88,7 @@ try {
                 $driver['constructor_id'] = (int)$driver['constructor_id'];
                 $driver['race_driver_id'] = (int)$driver['race_driver_id'];
                 $driver['price'] = (float)$driver['price'];
-                $driver['qualifying_position'] = $driver['qualifying_position'] ? (int)$driver['qualifying_position'] : null;
+                $driver['starting_position'] = $driver['starting_position'] ? (int)$driver['starting_position'] : null;
                 $driver['race_position'] = $driver['race_position'] ? (int)$driver['race_position'] : null;
                 $driver['fastest_lap'] = (bool)$driver['fastest_lap'];
                 $driver['dnf'] = (bool)$driver['dnf'];

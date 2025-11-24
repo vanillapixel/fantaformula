@@ -190,7 +190,7 @@ function ff_seedDummyData(PDO $db, array &$messages) {
     $baseResultsOrder = [ ['VER',1,1,1,0], ['NOR',2,2,0,0], ['LEC',3,3,0,0], ['HAM',4,4,0,0], ['RUS',5,5,0,0], ['PIA',6,6,0,0], ['ALO',7,7,0,0], ['GAS',8,8,0,0], ['LAW',9,9,0,0], ['AAN',10,10,0,0] ];
         $selRes = $db->prepare('SELECT 1 FROM race_results WHERE race_id = ? AND driver_id = ?');
     // points_earned removed; calculated_at -> created_at; add dns default 0
-    $insRes = $db->prepare('INSERT INTO race_results (race_id,driver_id,qualifying_position,race_position,fastest_lap,dnf,dns,created_at) VALUES (?,?,?,?,?,?,0,CURRENT_TIMESTAMP)');
+    $insRes = $db->prepare('INSERT INTO race_results (race_id,driver_id,starting_position,race_position,fastest_lap,dnf,dns,created_at) VALUES (?,?,?,?,?,?,0,CURRENT_TIMESTAMP)');
         foreach ($raceIds as $raceName=>$rid) {
             foreach ($baseResultsOrder as $r) {
                 [$code,$q,$pos,$fast,$dnf] = $r; $did = $driverIds[$code] ?? null; if (!$did) continue; $selRes->execute([$rid,$did]);

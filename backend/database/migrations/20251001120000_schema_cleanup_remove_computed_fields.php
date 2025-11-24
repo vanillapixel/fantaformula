@@ -64,20 +64,20 @@ return [
       }
       if ($hasPointsEarned || ($hasCalc && !$hasCreated) || !$hasDns) { $needRebuild=true; }
       if ($needRebuild) {
-        $db->exec("CREATE TABLE __tmp_rr (id INTEGER PRIMARY KEY AUTOINCREMENT, race_id INTEGER NOT NULL, driver_id INTEGER NOT NULL, qualifying_position INTEGER, race_position INTEGER, fastest_lap BOOLEAN DEFAULT 0, dnf BOOLEAN DEFAULT 0, dns BOOLEAN DEFAULT 0, created_at DATETIME, UNIQUE(race_id,driver_id), FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE, FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE)");
+        $db->exec("CREATE TABLE __tmp_rr (id INTEGER PRIMARY KEY AUTOINCREMENT, race_id INTEGER NOT NULL, driver_id INTEGER NOT NULL, starting_position INTEGER, race_position INTEGER, fastest_lap BOOLEAN DEFAULT 0, dnf BOOLEAN DEFAULT 0, dns BOOLEAN DEFAULT 0, created_at DATETIME, UNIQUE(race_id,driver_id), FOREIGN KEY (race_id) REFERENCES races(id) ON DELETE CASCADE, FOREIGN KEY (driver_id) REFERENCES drivers(id) ON DELETE CASCADE)");
         // choose created_at source: calculated_at else existing created_at else CURRENT_TIMESTAMP
         $sourceCreated = $hasCalc && !$hasCreated ? 'calculated_at' : ($hasCreated ? 'created_at' : 'NULL');
         $qCols = $db->query("SELECT name FROM pragma_table_info('race_results')")->fetchAll(PDO::FETCH_COLUMN);
         $sel = [];
         if (in_array('id',$qCols)) $sel[]='id';
         $sel[]='race_id'; $sel[]='driver_id';
-        $sel[] = in_array('qualifying_position',$qCols)?'qualifying_position':'NULL as qualifying_position';
+        $sel[] = in_array('starting_position',$qCols)?'starting_position':'NULL as starting_position';
         $sel[] = in_array('race_position',$qCols)?'race_position':(in_array('position',$qCols)?'position as race_position':'NULL as race_position');
         $sel[] = in_array('fastest_lap',$qCols)?'fastest_lap':'0 as fastest_lap';
         $sel[] = in_array('dnf',$qCols)?'dnf':'0 as dnf';
         $sel[] = '0 as dns';
         $sel[] = $sourceCreated . ' as created_at';
-        $db->exec('INSERT INTO __tmp_rr (' . 'id,race_id,driver_id,qualifying_position,race_position,fastest_lap,dnf,dns,created_at' . ') SELECT ' . implode(',', $sel) . ' FROM race_results');
+        $db->exec('INSERT INTO __tmp_rr (' . 'id,race_id,driver_id,starting_position,race_position,fastest_lap,dnf,dns,created_at' . ') SELECT ' . implode(',', $sel) . ' FROM race_results');
         $db->exec('DROP TABLE race_results');
         $db->exec('ALTER TABLE __tmp_rr RENAME TO race_results');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_race_results_race ON race_results(race_id)');
