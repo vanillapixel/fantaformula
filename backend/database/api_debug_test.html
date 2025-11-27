@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>API Debug Test</title>
+</head>
+
+<body>
+    <h2>API Debug Test</h2>
+    <div id="results"></div>
+
+    <script>
+        async function testAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing API calls...</p>';
+
+            const tests = [
+                { name: 'Drivers API (race_id=1)', url: '/backend/api/drivers/all.php?race_id=1' },
+                { name: 'Races API', url: '/backend/api/races/all.php?season=2025' },
+                { name: 'Championships API', url: '/backend/api/championships/index.php' },
+                { name: 'Lineups API', url: '/backend/api/lineups/index.php?race_id=1&championship_id=1' }
+            ];
+
+            let output = '<h3>Test Results:</h3>';
+
+            for (const test of tests) {
+                try {
+                    console.log(`Testing ${test.name}...`);
+                    const response = await fetch(test.url);
+                    const data = await response.json();
+
+                    output += `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc;">
+                            <h4>${test.name}</h4>
+                            <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                            <p><strong>Success:</strong> ${data.success ? 'Yes' : 'No'}</p>
+                            ${data.error ? `<p><strong>Error:</strong> ${data.error}</p>` : ''}
+                            <details>
+                                <summary>Full Response</summary>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } catch (error) {
+                    output += `
+                        <div style="margin: 10px 0; padding: 10px; border: 1px solid red;">
+                            <h4>${test.name}</h4>
+                            <p><strong>Error:</strong> ${error.message}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            results.innerHTML = output;
+        }
+
+        // Run tests when page loads
+        testAPI();
+    </script>
+</body>
+
+</html>

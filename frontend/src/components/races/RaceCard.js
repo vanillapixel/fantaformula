@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const RaceCard = ({ race }) => {
+const RaceCard = ({ race, championshipId }) => {
+    const navigate = useNavigate();
     const formatDate = (dateString) => {
         if (!dateString) return 'TBD';
 
@@ -121,7 +123,11 @@ const RaceCard = ({ race }) => {
             {/* Action Buttons */}
             <div className="flex space-x-2">
                 {canSelectLineup ? (
-                    <button className="flex-1 btn-primary">
+                    <button
+                        className="flex-1 btn-primary"
+                        onClick={() => championshipId && navigate(`/lineup/${race.id}/${championshipId}`)}
+                        disabled={!championshipId}
+                    >
                         Set Lineup
                     </button>
                 ) : race.status === 'completed' ? (

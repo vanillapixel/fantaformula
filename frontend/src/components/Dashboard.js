@@ -87,9 +87,15 @@ const ChampionshipCard = ({ champ, upcomingRace }) => {
                 ) : (
                     <div className="bg-gray-100 rounded-md p-4 text-center text-sm text-gray-500">Nessuna gara imminente</div>
                 )}
-                <Link to={`/championships/${champ.id}/lineup/create`} className="mt-2 bg-primary text-white w-full text-center py-2 rounded-md font-semibold text-sm tracking-wide hover:bg-primary/90 transition-colors">
-                    CREA LINEUP
-                </Link>
+                {upcomingRace ? (
+                    <Link to={`/lineup/${upcomingRace.id}/${champ.id}`} className="mt-2 bg-primary text-white w-full text-center py-2 rounded-md font-semibold text-sm tracking-wide hover:bg-primary/90 transition-colors">
+                        CREA LINEUP
+                    </Link>
+                ) : (
+                    <button disabled className="mt-2 bg-gray-600 text-gray-400 w-full text-center py-2 rounded-md font-semibold text-sm tracking-wide cursor-not-allowed">
+                        NESSUNA GARA DISPONIBILE
+                    </button>
+                )}
             </div>
         </div>
     );

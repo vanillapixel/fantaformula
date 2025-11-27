@@ -28,11 +28,13 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        // Log the error for debugging but don't automatically logout
         if (error.response?.status === 401) {
-            // Token expired or invalid
-            localStorage.removeItem('ff1_token');
-            localStorage.removeItem('ff1_user');
-            window.location.href = '/login';
+            console.log('401 Unauthorized error:', {
+                url: error.config?.url,
+                message: error.response?.data?.message,
+                error: error.response?.data
+            });
         }
         return Promise.reject(error);
     }

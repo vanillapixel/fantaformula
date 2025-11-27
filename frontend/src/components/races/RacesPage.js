@@ -8,6 +8,7 @@ const RacesPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedSeason, setSelectedSeason] = useState(2025);
+    const [selectedChampionshipId, setSelectedChampionshipId] = useState(1); // Default to first championship
 
     const loadRaces = useCallback(async () => {
         try {
@@ -86,6 +87,7 @@ const RacesPage = () => {
                             <RaceCard
                                 key={race.id}
                                 race={race}
+                                championshipId={selectedChampionshipId}
                             />
                         ))}
                     </div>

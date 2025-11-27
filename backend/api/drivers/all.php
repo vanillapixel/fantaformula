@@ -13,11 +13,23 @@ try {
         $ids = array_column($drivers,'id');
         if ($ids) {
             $in = implode(',', array_fill(0,count($ids),'?'));
-            $stmt = $db->prepare("SELECT driver_id, price FROM race_drivers WHERE race_id = ? AND driver_id IN ($in)");
+            $stmt = $db->prepare("
+                SELECT rd.driver_id, rd.price, c.color_primary as constructor_color 
+                FROM race_drivers rd
+                LEFT JOIN constructors c ON rd.constructor_id = c.id
+                WHERE rd.race_id = ? AND rd.driver_id IN ($in)
+            ");
             $stmt->execute(array_merge([$raceId], $ids));
             $pricing = [];
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) { $pricing[$row['driver_id']] = (float)$row['price']; }
-            foreach ($drivers as &$d) { $d['price'] = $pricing[$d['id']] ?? null; }
+            $colors = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) { 
+                $pricing[$row['driver_id']] = (float)$row['price'];
+                $colors[$row['driver_id']] = $row['constructor_color'];
+            }
+            foreach ($drivers as &$d) { 
+                $d['price'] = $pricing[$d['id']] ?? null;
+                $d['constructor_color'] = $colors[$d['id']] ?? null;
+            }
         }
     }
     sendSuccess(['count'=>count($drivers),'race_id'=>$raceId,'drivers'=>$drivers],'All drivers retrieved');

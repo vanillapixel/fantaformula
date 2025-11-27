@@ -8,6 +8,7 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import ChampionshipsPage from './components/championships/ChampionshipsPage';
 import LeaderboardPage from './components/championships/LeaderboardPage';
 import RacesPage from './components/races/RacesPage';
+import CreateLineupPage from './components/lineup/CreateLineupPage';
 import AdminPanel from './components/admin/AdminPanel';
 
 // Protected Route Component
@@ -82,6 +83,14 @@ const AppContent = () => {
             element={
               <ProtectedRoute>
                 <RacesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/lineup/:raceId/:championshipId"
+            element={
+              <ProtectedRoute>
+                <CreateLineupPage />
               </ProtectedRoute>
             }
           />
