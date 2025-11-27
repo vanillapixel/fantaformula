@@ -1,0 +1,10 @@
+.driver-slot::before {
+    content: '';
+    height: 30px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    border: 3px solid black;
+    border-bottom: 0;
+}
